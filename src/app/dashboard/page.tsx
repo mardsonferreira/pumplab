@@ -3,57 +3,36 @@
 import { useState } from "react"
 import { cn } from "@/utils/cn"
 import { PiStarFourFill } from "react-icons/pi";
+import { useGenerateNarrative } from "@/app/hooks/openai";
+import Link from "next/link";
+import { FaArrowRight } from "react-icons/fa6";
 
 const suggestions = [
-    "Workout routines for beginners",
-    "Nutrition tips for muscle gain",
-    "Motivational fitness quotes",
-    "HIIT workout ideas",
-    "Post-workout recovery tips",
+    "Consistency Beats Motivation",
+    "The Real Meaning of “Being Healthy”",
+    "Small Daily Habits That Change Your Body and Mind",
+    "Why Most People Quit — and How to Avoid It",
+    "Training Is Not About the Gym — It’s About Identity",
 ]
 
 export default function Dashboard() {
     const [input, setInput] = useState("")
-    const [narratives, setNarratives] = useState<string[]>([])
-    const [isLoading, setIsLoading] = useState(false)
+    const { generateNarrative, generating, narratives } = useGenerateNarrative();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (!input.trim()) return
 
-        setIsLoading(true)
-        // Simulate API call - replace with actual API call later
-        setTimeout(() => {
-            const mockNarratives = [
-                `Narrative 1: ${input} - This is a sample narrative generated based on your theme. It provides engaging content that can be used for Instagram posts.`,
-                `Narrative 2: ${input} - Another creative narrative that explores different angles of your chosen theme. Perfect for social media engagement.`,
-                `Narrative 3: ${input} - A compelling story that connects with your audience and delivers value through your fitness expertise.`,
-                `Narrative 4: ${input} - An inspiring narrative that motivates and educates your followers about fitness and wellness.`,
-                `Narrative 5: ${input} - A powerful narrative that showcases your knowledge and helps build trust with your community.`,
-            ]
-            setNarratives(mockNarratives)
-            setIsLoading(false)
-        }, 1000)
+        generateNarrative(input);
     }
 
     const handleSuggestionClick = (suggestion: string) => {
-        setInput(suggestion)
+        setInput(suggestion);
+        generateNarrative(suggestion);
     }
 
     const handleLoadMore = () => {
-        setIsLoading(true)
-        // Simulate loading more narratives
-        setTimeout(() => {
-            const newNarratives = [
-                `Narrative ${narratives.length + 1}: ${input} - Additional narrative content to keep your feed fresh and engaging.`,
-                `Narrative ${narratives.length + 2}: ${input} - More creative content that expands on your theme with new perspectives.`,
-                `Narrative ${narratives.length + 3}: ${input} - Another valuable piece of content for your Instagram audience.`,
-                `Narrative ${narratives.length + 4}: ${input} - Fresh narrative that maintains consistency with your brand voice.`,
-                `Narrative ${narratives.length + 5}: ${input} - New content that helps you stay active on social media.`,
-            ]
-            setNarratives([...narratives, ...newNarratives])
-            setIsLoading(false)
-        }, 1000)
+        generateNarrative(input);
     }
 
     return (
@@ -88,16 +67,16 @@ export default function Dashboard() {
                     />
                     <button
                         type="submit"
-                        disabled={!input.trim() || isLoading}
+                        disabled={!input.trim() || generating}
                         className={cn(
-                            "absolute bottom-3 right-3 p-2 rounded-md transition-colors",
+                            "absolute bottom-4 right-3 p-2 rounded-md transition-colors",
                             "disabled:opacity-50 disabled:cursor-not-allowed",
                             input.trim()
                                 ? "bg-primary text-primary-foreground hover:bg-accent"
                                 : "bg-neutral-800 text-neutral-500"
                         )}
                     >
-                        {isLoading ? (
+                        {generating ? (
                             <svg
                                 className="w-5 h-5 animate-spin"
                                 fill="none"
@@ -163,21 +142,29 @@ export default function Dashboard() {
             {narratives.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {narratives.map((narrative, index) => (
-                        <div
+                        <Link
                             key={index}
+                            href={`/narrative/${narrative.id}`}
                             className={cn(
-                                "p-6 rounded-lg border border-neutral-800 bg-neutral-900/50",
-                                "hover:border-primary/50 transition-colors"
+                                "block p-6 rounded-lg border border-neutral-800 bg-neutral-900/20",
+                                "hover:border-primary/50 transition-all duration-200 cursor-pointer hover:bg-neutral-900/50",
+                                "hover:shadow-lg hover:shadow-primary/10"
                             )}
                         >
-                            <p className="text-foreground leading-relaxed">{narrative}</p>
-                        </div>
+                            <h3 className="text-md text-primary font-bold mb-4">{narrative.main_argument}</h3>
+                            <p className="text-foreground leading-relaxed">{narrative.central_thesis}</p>
+
+                            <div className="flex items-center justify-end mt-4">
+                                <span className="text-primary text-sm">Select</span>
+                                <FaArrowRight className="w-4 h-4 text-primary ml-2" />
+                            </div>
+                        </Link>
                     ))}
 
                     {/* Load More Card */}
                     <button
                         onClick={handleLoadMore}
-                        disabled={isLoading}
+                        disabled={generating}
                         className={cn(
                             "p-6 rounded-lg border-2 border-dashed border-neutral-800",
                             "bg-neutral-900/30 hover:border-primary/50 hover:bg-neutral-900/50",
@@ -187,7 +174,7 @@ export default function Dashboard() {
                             "min-h-[200px]"
                         )}
                     >
-                        {isLoading ? (
+                        {generating ? (
                             <svg
                                 className="w-8 h-8 animate-spin text-primary"
                                 fill="none"
