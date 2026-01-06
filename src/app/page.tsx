@@ -12,31 +12,28 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col">
-      {/* Hero Section */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 lg:py-32">
         <div className="mx-auto max-w-4xl text-center">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6">
-            AI Content for Personal Trainers Who Want to Grow on Instagram
+            Conteúdo com IA para Personal Trainers que Querem Crescer no Instagram
           </h1>
 
           <p className="text-lg sm:text-xl text-neutral-400 mb-8 max-w-2xl mx-auto">
-            Generate engaging Instagram Reels and Carousel posts in seconds.
-            AI-powered content creation designed specifically for fitness professionals
-            who want to stay consistent and grow their online presence.
+            Gere Reels e posts em Carrossel para o Instagram em segundos com criação de conteúdo impulsionada por IA,
+            feita sob medida para profissionais de fitness que querem manter consistência, engajar mais e crescer sua presença online.
           </p>
           <div className="flex justify-center gap-4">
             <Button variant="primary" className="text-base px-8 py-4">
-              Generate Content
+              Gerar Conteúdo
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="mx-auto max-w-6xl">
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-foreground">
-            Everything You Need to Dominate Instagram
+            Tudo o que Você Precisa para Dominar o Instagram
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="p-6 rounded-lg border border-neutral-800 bg-neutral-900/50">
@@ -56,11 +53,11 @@ export default async function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold mb-2 text-foreground">
-                AI-Generated Reels
+                Reels Gerados pela IA
               </h3>
               <p className="text-neutral-400">
-                Create engaging Instagram Reels with AI-powered scripts,
-                hooks, and fitness-focused content that converts.
+                Crie Reels envolventes para o Instagram com scripts,
+                hooks e conteúdo focado em fitness que convertem.
               </p>
             </div>
 
@@ -81,11 +78,11 @@ export default async function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold mb-2 text-foreground">
-                Carousel Posts
+                Posts em Carrossel
               </h3>
               <p className="text-neutral-400">
-                Generate multi-slide carousel posts with fitness tips,
-                workout routines, and educational content your audience loves.
+                Gere posts em Carrossel com dicas de fitness,
+                rotinas de treino e conteúdo educativo que seu público ama.
               </p>
             </div>
 
@@ -106,22 +103,21 @@ export default async function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold mb-2 text-foreground">
-                Fitness-Focused
+                Focado em Fitness
               </h3>
               <p className="text-neutral-400">
-                Every piece of content is tailored for fitness professionals
-                with industry-specific language and proven engagement strategies.
+                Cada peça de conteúdo é feita sob medida para profissionais de fitness
+                com linguagem específica para o setor e estratégias comprovadas de engajamento.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Value Proposition Section */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-neutral-900/30">
         <div className="mx-auto max-w-4xl">
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-foreground">
-            Why Personal Trainers Choose PumpLab
+            Porque Personal Trainers Escolhem o PumpLab
           </h2>
           <div className="space-y-8">
             <div className="flex gap-4">
@@ -144,11 +140,11 @@ export default async function Home() {
               </div>
               <div>
                 <h3 className="text-xl font-semibold mb-2 text-foreground">
-                  Save Hours Creating Content
+                  Economize Horas Criando Conteúdo
                 </h3>
                 <p className="text-neutral-400">
-                  Stop spending hours brainstorming and writing. Generate
-                  weeks of content in minutes, so you can focus on what you do best—training clients.
+                  Pare de gastar horas brainstorming e escrevendo. Gere
+                  semanas de conteúdo em minutos, para que você possa se concentrar no que você faz melhor—treinando clientes.
                 </p>
               </div>
             </div>
@@ -173,11 +169,10 @@ export default async function Home() {
               </div>
               <div>
                 <h3 className="text-xl font-semibold mb-2 text-foreground">
-                  Stay Consistent on Social Media
+                  Mantenha Consistência nas Redes Sociais
                 </h3>
                 <p className="text-neutral-400">
-                  Consistency is key to growth. With PumpLab, you'll never run out
-                  of content ideas. Post daily without the stress.
+                  Consistência é chave para o crescimento. Com o PumpLab, você nunca vai ficar sem ideias de conteúdo. Poste diariamente sem o estresse.
                 </p>
               </div>
             </div>
@@ -202,11 +197,11 @@ export default async function Home() {
               </div>
               <div>
                 <h3 className="text-xl font-semibold mb-2 text-foreground">
-                  Designed for Fitness Professionals
+                  Feito para Profissionais de Fitness
                 </h3>
                 <p className="text-neutral-400">
-                  Built specifically for personal trainers, coaches, and fitness
-                  influencers. Every feature is tailored to your industry needs.
+                  Construído especificamente para personal trainers, coaches e influencers de fitness.
+                  Cada funcionalidade é feita sob medida para as necessidades do seu setor.
                 </p>
               </div>
             </div>
@@ -214,18 +209,17 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Call to Action Section */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-foreground">
-            Ready to Transform Your Instagram?
+            Pronto para Transformar o Seu Instagram?
           </h2>
           <p className="text-lg text-neutral-400 mb-8">
-            Join thousands of personal trainers who are growing their online presence
-            with AI-powered content. Start generating today.
+            Junte-se a milhares de profissionais de fitness que estão crescendo sua presença online
+            com conteúdo impulsionado por IA. Comece a gerar conteúdo hoje.
           </p>
           <Button variant="primary" className="text-base px-8 py-4">
-            Generate Content
+            Gerar Conteúdo
           </Button>
         </div>
       </section>

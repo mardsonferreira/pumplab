@@ -3,21 +3,10 @@
 import { useState, useCallback } from "react";
 import { generateNarratives } from "@/utils/api/openai";
 import { parseNarratives } from "@/utils/parseNarratives";
-
-type Narrative = {
-    id: string;
-    theme: string;
-    central_thesis: string;
-    main_argument: string;
-    narrative_sequence: {
-        step: number;
-        title: string;
-        description: string;
-    }[];
-}
+import { Narrative } from "@/types";
+import { narrativePrompt } from "./prompt";
 
 export function useGenerateNarrative() {
-    const promptTemplate = process.env.NEXT_PUBLIC_NARRATIVE_PROMPT || "";
     const [generating, setGenerating] = useState(false);
     const [narratives, setNarratives] = useState<Narrative[]>([]);
 
@@ -26,7 +15,7 @@ export function useGenerateNarrative() {
         setNarratives([]);
 
         try {
-            const prompt = promptTemplate.replace("{{THEME}}", inputText);
+            const prompt = narrativePrompt.replace("{{THEME}}", inputText);
             const content = await generateNarratives(prompt);
             setNarratives(parseNarratives(content));
 
@@ -36,7 +25,7 @@ export function useGenerateNarrative() {
         } finally {
             setGenerating(false);
         }
-    }, [promptTemplate]);
+    }, [narrativePrompt]);
 
     return {
         generateNarrative,
