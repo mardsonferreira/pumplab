@@ -19,6 +19,8 @@ const config: Config = {
           DEFAULT: "var(--accent)",
           foreground: "var(--accent-foreground)",
         },
+        confirm: "var(--confirm)",
+        error: "var(--error)",
       },
     },
   },

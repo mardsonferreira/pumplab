@@ -9,6 +9,8 @@
   --primary-foreground: #0a0a0a;
   --accent: #eab308;
   --accent-foreground: #0a0a0a;
+  --confirm: #22c55e;
+  --error: #ef4444;
 }
 
 * {
