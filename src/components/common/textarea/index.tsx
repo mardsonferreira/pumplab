@@ -11,10 +11,11 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
     labelClassName?: string;
     label?: string;
     value?: string;
+    icon?: React.ReactNode;
     onChangeValue?: (string: string) => void;
 }
 
-export function Textarea({ id, label, value, onChangeValue, containerClassName, labelClassName, ...props }: TextareaProps) {
+export function Textarea({ id, label, value, icon, onChangeValue, containerClassName, labelClassName, ...props }: TextareaProps) {
     const [previousValue, setPreviousValue] = useState(value || "");
     const [currentValue, setCurrentValue] = useState(value || "");
     const hasBeenEdited = useMemo(() => previousValue.trim() !== currentValue.trim(), [previousValue, currentValue]);
@@ -38,9 +39,12 @@ export function Textarea({ id, label, value, onChangeValue, containerClassName, 
 
     return (
         <div className={cn("flex flex-col gap-2 relative", containerClassName)}>
-            <label className={cn("block text-sm font-medium text-foreground text-primary", labelClassName)} htmlFor={id}>{
-                label}
-            </label>
+            <div className="flex items-center gap-2">
+                {icon && icon}
+                <label className={cn("block text-sm font-medium text-foreground text-primary", labelClassName)} htmlFor={id}>{
+                    label}
+                </label>
+            </div>
 
             <textarea id={id} value={currentValue} onChange={handleChange} className={cn(
                 "w-full px-4 py-3 rounded-lg border border-neutral-800",

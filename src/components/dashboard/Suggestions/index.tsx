@@ -1,6 +1,7 @@
 import { cn } from "@/utils/cn";
 
 interface SuggestionsProps {
+    disabled?: boolean;
     onClick: (suggestion: string) => void;
 }
 
@@ -12,7 +13,7 @@ const suggestions = [
     "O Treino Não É Sobre a Academia — É Sobre a Identidade",
 ]
 
-export function Suggestions({ onClick }: SuggestionsProps) {
+export function Suggestions({ disabled, onClick }: SuggestionsProps) {
     return (
         <div className="mt-4">
             <div className="flex flex-wrap gap-2">
@@ -20,6 +21,7 @@ export function Suggestions({ onClick }: SuggestionsProps) {
                     <button
                         key={index}
                         type="button"
+                        disabled={disabled}
                         onClick={() => onClick(suggestion)}
                         className={cn(
                             "px-4 py-2 rounded-md text-sm transition-colors",

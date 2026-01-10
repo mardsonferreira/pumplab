@@ -7,6 +7,7 @@ import { PiStarFourFill } from "react-icons/pi";
 import { useGenerateNarrative } from "@/app/hooks/openai";
 import { NarrativeCard } from "@/components/dashboard/NarrativeCard";
 import { Suggestions } from "@/components/dashboard/Suggestions";
+import { WaveLoading } from "@/components/common/wave";
 
 export default function Dashboard() {
     const [input, setInput] = useState("")
@@ -107,11 +108,11 @@ export default function Dashboard() {
                 </div>
 
                 {!narratives.length && (
-                    <Suggestions onClick={handleSuggestionClick} />
+                    <Suggestions disabled={generating} onClick={handleSuggestionClick} />
                 )}
             </form>
 
-            {narratives.length > 0 && (
+            {narratives.length > 0 && !generating && (
                 <>
                     <h3 className="text-lg font-bold text-foreground mb-8 text-center">1. Selecione uma narrativa para continuar</h3>
 
@@ -173,6 +174,13 @@ export default function Dashboard() {
                         </button>
                     </div>
                 </>
+            )}
+
+            {generating && (
+                <div className="flex items-center justify-center gap-2">
+                    <span className="text-sm text-neutral-400 font-bold text-center">Gerando narrativas. Aguarde um momento</span>
+                    <WaveLoading size="lg" color="primary" />
+                </div>
             )}
         </div>
     )
