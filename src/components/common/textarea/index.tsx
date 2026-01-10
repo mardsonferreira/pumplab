@@ -1,54 +1,66 @@
 import { cn } from "@/utils/cn";
 import { MdCheckCircle } from "react-icons/md";
 import { RiArrowGoBackLine } from "react-icons/ri";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 import { Tooltip } from "@/components/ui/Tooltip";
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
     id: string;
     containerClassName?: string;
-    className?: string;
+    labelClassName?: string;
     label?: string;
     value?: string;
-    onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    onChangeValue?: (string: string) => void;
 }
 
-export function Textarea({ id, label, value, onChange, className, containerClassName, ...props }: TextareaProps) {
-    const [initialValue, setInitialValue] = useState(value || "");
-    const hasBeenEdited = useMemo(() => initialValue !== (value || ""), [initialValue, value]);
-    const hasInitialized = useRef(false);
+export function Textarea({ id, label, value, onChangeValue, containerClassName, labelClassName, ...props }: TextareaProps) {
+    const [previousValue, setPreviousValue] = useState(value || "");
+    const [currentValue, setCurrentValue] = useState(value || "");
+    const hasBeenEdited = useMemo(() => previousValue.trim() !== currentValue.trim(), [previousValue, currentValue]);
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        onChange?.(e);
+        setCurrentValue(e.target.value);
     }
 
-    // Set initialValue only once on mount
-    useEffect(() => {
-        if (!hasInitialized.current) {
-            setInitialValue(value || "");
-            hasInitialized.current = true;
-        }
-    }, [value]);
+    const handleRevert = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setCurrentValue(previousValue);
+    }, [previousValue]);
+
+    const handleConfirm = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setPreviousValue(currentValue);
+        onChangeValue?.(currentValue);
+    }, [previousValue, currentValue, onChangeValue]);
 
     return (
-        <div className={cn("relative", containerClassName)}>
-            <label className="block text-sm font-medium text-foreground text-primary" htmlFor={id}>{label}</label>
-            <textarea id={id} value={value} onChange={handleChange} className={cn(
+        <div className={cn("flex flex-col gap-2 relative", containerClassName)}>
+            <label className={cn("block text-sm font-medium text-foreground text-primary", labelClassName)} htmlFor={id}>{
+                label}
+            </label>
+
+            <textarea id={id} value={currentValue} onChange={handleChange} className={cn(
                 "w-full px-4 py-3 rounded-lg border border-neutral-800",
                 "bg-neutral-900/50 text-foreground placeholder:text-neutral-500",
                 "focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                "resize-none min-h-[100px]",
-                className
+                "resize-none",
+                props.className
             )} {...props} />
 
             {hasBeenEdited && (
-                <div className="absolute top-8 right-4 flex items-center gap-2">
+                <div className="absolute bottom-3 right-4 flex items-center gap-2">
                     <Tooltip content="Reverter">
-                        <RiArrowGoBackLine className="w-4 h-4 text-error" />
+                        <button type="button" onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleRevert(e)}>
+                            <RiArrowGoBackLine className="w-4 h-4 text-warning" />
+                        </button>
                     </Tooltip>
                     <Tooltip content="Salvar">
-                        <MdCheckCircle className="w-4 h-4 text-confirm" />
+                        <button type="button" onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleConfirm(e)}>
+                            <MdCheckCircle className="w-4 h-4 text-confirm" />
+                        </button>
                     </Tooltip>
                 </div>
             )}

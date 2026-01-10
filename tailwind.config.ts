@@ -21,6 +21,7 @@ const config: Config = {
         },
         confirm: "var(--confirm)",
         error: "var(--error)",
+        warning: "var(--warning)",
       },
     },
   },

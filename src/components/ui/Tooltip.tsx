@@ -9,7 +9,7 @@ export function Tooltip({ children, content }: TooltipProps) {
     return (
         <TooltipPrimitive.Provider>
             <TooltipPrimitive.Root>
-                <TooltipPrimitive.Trigger>{children}</TooltipPrimitive.Trigger>
+                <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
                 <TooltipPrimitive.Portal>
                     <TooltipPrimitive.Content>{content}</TooltipPrimitive.Content>
                 </TooltipPrimitive.Portal>
