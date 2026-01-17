@@ -9,3 +9,19 @@ export type Narrative = {
         description: string;
     }[];
 }
+
+export type CarouselPromptObject = {
+    style: {
+        color_palette: string;
+        visual_style: string;
+    };
+    slides: {
+        role: string;
+        text: string;
+        image_prompt: string;
+    }[];
+}
+
+export type Carousel = {
+    images_url: string[];
+}

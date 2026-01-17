@@ -6,9 +6,12 @@ import { FaQuoteLeft } from "react-icons/fa";
 import { Textarea } from "@/components/common/textarea";
 import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { Button } from "@/components/ui/Button";
+import { useGenerateCarousel } from "@/app/hooks/openai";
+import { WaveLoading } from "@/components/common/wave";
 
 export default function EditNarrative() {
     const { narrative, setNarrative } = useNarrativeStore();
+    const { generateCarousel, generating, carousel } = useGenerateCarousel();
 
     if (!narrative) {
         return <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-6xl">Narrativa não encontrada</div>;
@@ -37,9 +40,10 @@ export default function EditNarrative() {
         setNarrative({ ...narrative, narrative_sequence: updatedSequence });
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log(narrative);
+        await generateCarousel(narrative);
+        console.log("carousel", carousel);
     };
 
     return (
@@ -53,6 +57,7 @@ export default function EditNarrative() {
                     label="Tese Central"
                     value={narrative.central_thesis}
                     icon={<FiFileText className="w-5 h-5 text-primary" />}
+                    disabled={generating}
                     onChangeValue={handleCentralThesisChange}
                     rows={4}
                 />
@@ -63,6 +68,7 @@ export default function EditNarrative() {
                     label="Argumento Principal"
                     value={narrative.main_argument}
                     icon={<FaQuoteLeft className="w-5 h-5 text-primary" />}
+                    disabled={generating}
                     onChangeValue={handleMainArgumentChange}
                     rows={8}
                 />
@@ -82,6 +88,7 @@ export default function EditNarrative() {
                                     label={`${index + 1}.`}
                                     containerClassName="flex-row w-full items-center gap-3"
                                     value={step.description}
+                                    disabled={generating}
                                     onChangeValue={(value) => handleSequenceChange(index, value)}
                                     rows={1}
                                 />
@@ -91,17 +98,24 @@ export default function EditNarrative() {
                 </div>
 
                 <footer className="flex items-center justify-center gap-4">
-                    <Button type="button" variant="primary">
+                    <Button type="button" variant="primary" disabled>
                         <FiFilm className="w-4 h-4 mr-2" />
                         Reels
                     </Button>
-                    <Button type="submit" variant="primary">
+                    <Button type="submit" variant="primary" disabled={generating}>
                         <FiImage className="w-5 h-5 mr-2" />
                         Carrossel/Story
                     </Button>
 
                 </footer>
             </form>
+
+            {generating && (
+                <div className="flex items-center justify-center gap-2 mt-6">
+                    <span className="text-sm text-neutral-400 font-bold text-center">Gerando carousel. Isso pode levar alguns minutos</span>
+                    <WaveLoading size="lg" color="primary" />
+                </div>
+            )}
         </div>
     )
 }

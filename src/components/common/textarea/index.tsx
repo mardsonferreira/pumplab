@@ -12,10 +12,11 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
     label?: string;
     value?: string;
     icon?: React.ReactNode;
+    disabled?: boolean;
     onChangeValue?: (string: string) => void;
 }
 
-export function Textarea({ id, label, value, icon, onChangeValue, containerClassName, labelClassName, ...props }: TextareaProps) {
+export function Textarea({ id, label, value, icon, onChangeValue, containerClassName, labelClassName, disabled, ...props }: TextareaProps) {
     const [previousValue, setPreviousValue] = useState(value || "");
     const [currentValue, setCurrentValue] = useState(value || "");
     const hasBeenEdited = useMemo(() => previousValue.trim() !== currentValue.trim(), [previousValue, currentValue]);
@@ -46,7 +47,7 @@ export function Textarea({ id, label, value, icon, onChangeValue, containerClass
                 </label>
             </div>
 
-            <textarea id={id} value={currentValue} onChange={handleChange} className={cn(
+            <textarea id={id} value={currentValue} onChange={handleChange} disabled={disabled} className={cn(
                 "w-full px-4 py-3 rounded-lg border border-neutral-800",
                 "bg-neutral-900/50 text-foreground placeholder:text-neutral-500",
                 "focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
@@ -57,12 +58,12 @@ export function Textarea({ id, label, value, icon, onChangeValue, containerClass
             {hasBeenEdited && (
                 <div className="absolute bottom-3 right-4 flex items-center gap-2">
                     <Tooltip content="Reverter">
-                        <button type="button" onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleRevert(e)}>
+                        <button type="button" onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleRevert(e)} disabled={disabled}>
                             <RiArrowGoBackLine className="w-4 h-4 text-warning" />
                         </button>
                     </Tooltip>
                     <Tooltip content="Salvar">
-                        <button type="button" onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleConfirm(e)}>
+                        <button type="button" onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleConfirm(e)} disabled={disabled}>
                             <MdCheckCircle className="w-4 h-4 text-confirm" />
                         </button>
                     </Tooltip>
