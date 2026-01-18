@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 import { fontSans } from "@/lib/fonts"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"

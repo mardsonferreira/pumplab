@@ -2,6 +2,7 @@
 
 import { FiFilm, FiImage, FiFileText, FiList } from "react-icons/fi";
 import { FaQuoteLeft } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
 import { Textarea } from "@/components/common/textarea";
 import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
@@ -12,6 +13,7 @@ import { WaveLoading } from "@/components/common/wave";
 export default function EditNarrative() {
     const { narrative, setNarrative } = useNarrativeStore();
     const { generateCarousel, generating, carousel } = useGenerateCarousel();
+    const router = useRouter();
 
     if (!narrative) {
         return <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-6xl">Narrativa não encontrada</div>;
@@ -42,8 +44,8 @@ export default function EditNarrative() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        await generateCarousel(narrative);
-        console.log("carousel", carousel);
+        // await generateCarousel(narrative);
+        router.push("/post");
     };
 
     return (
@@ -90,7 +92,6 @@ export default function EditNarrative() {
                                     value={step.description}
                                     disabled={generating}
                                     onChangeValue={(value) => handleSequenceChange(index, value)}
-                                    rows={1}
                                 />
                             </div>
                         ))}

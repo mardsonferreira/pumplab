@@ -55,3 +55,55 @@ body {
     animation: wave 1s ease-in-out infinite;
   }
 }
+
+.slick-prev:before,
+.slick-next:before {
+  color: var(--foreground);
+  font-size: 20px;
+  opacity: 0.8;
+}
+
+.slick-prev:hover:before,
+.slick-next:hover:before {
+  opacity: 1;
+}
+
+.slick-prev {
+  left: 10px;
+  z-index: 10;
+}
+
+.slick-next {
+  right: 10px;
+  z-index: 10;
+}
+
+.slick-dots {
+  bottom: 12px;
+}
+
+.slick-dots li {
+  width: 6px;
+  height: 6px;
+  margin: 0 3px;
+}
+
+.slick-dots li button {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+}
+
+.slick-dots li button:before {
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0.5;
+  font-size: 8px;
+  width: 6px;
+  height: 6px;
+  line-height: 6px;
+}
+
+.slick-dots li.slick-active button:before {
+  opacity: 1;
+  color: var(--primary);
+}

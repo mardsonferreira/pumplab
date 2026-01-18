@@ -51,7 +51,6 @@ export function Textarea({ id, label, value, icon, onChangeValue, containerClass
                 "w-full px-4 py-3 rounded-lg border border-neutral-800",
                 "bg-neutral-900/50 text-foreground placeholder:text-neutral-500",
                 "focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                "resize-none",
                 props.className
             )} {...props} />
 
@@ -59,7 +58,7 @@ export function Textarea({ id, label, value, icon, onChangeValue, containerClass
                 <div className="absolute bottom-3 right-4 flex items-center gap-2">
                     <Tooltip content="Reverter">
                         <button type="button" onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleRevert(e)} disabled={disabled}>
-                            <RiArrowGoBackLine className="w-4 h-4 text-warning" />
+                            <RiArrowGoBackLine className="w-4 h-4 text-primary" />
                         </button>
                     </Tooltip>
                     <Tooltip content="Salvar">

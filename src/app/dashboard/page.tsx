@@ -39,9 +39,9 @@ export default function Dashboard() {
                     </h1>
 
                 </div>
-                <p className="text-neutral-400">
-                    Digite um tema e deixe a IA gerar narrativas envolventes para o seu conteúdo
-                </p>
+                <span className="text-neutral-400 text-center">
+                    Digite um tema e deixe a IA gerar narrativas envolventes para o seu post no Instagram
+                </span>
             </div>
 
             <form onSubmit={handleSubmit} className="mb-8">
@@ -108,7 +108,10 @@ export default function Dashboard() {
                 </div>
 
                 {!narratives.length && (
-                    <Suggestions disabled={generating} onClick={handleSuggestionClick} />
+                    <div className="flex flex-col gap-2 mt-4">
+                        <span>Não sabe por onde começar? Experimente uma das sugestões abaixo:</span>
+                        <Suggestions disabled={generating} onClick={handleSuggestionClick} />
+                    </div>
                 )}
             </form>
 
