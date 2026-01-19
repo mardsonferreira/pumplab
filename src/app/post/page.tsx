@@ -8,13 +8,13 @@ export default function Post() {
     return (
         <div className="min-h-screen bg-background py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
             <div className="container mx-auto max-w-2xl">
-                <div className="mb-8 text-center">
-                    <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
-                        Preview do seu conteúdo no estilo Instagram
+                <div className="mb-4 text-center">
+                    <h3 className="text-xl sm:text-2xl font-bold text-foreground">
+                        Preview do seu conteúdo no Instagram
                     </h3>
                 </div>
 
-                <div className="bg-foreground/5 border border-foreground/10 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm">
+                <div className="bg-foreground/5 border border-foreground/10 rounded-md  overflow-hidden shadow-2xl backdrop-blur-sm">
                     <div className="bg-background">
                         <Carousel />
                     </div>

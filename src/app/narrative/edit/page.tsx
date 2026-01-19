@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { FiFilm, FiImage, FiFileText, FiList } from "react-icons/fi";
 import { FaQuoteLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
@@ -9,11 +10,13 @@ import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { Button } from "@/components/ui/Button";
 import { useGenerateCarousel } from "@/app/hooks/openai";
 import { WaveLoading } from "@/components/common/wave";
+import { useMobile } from "@/app/hooks/use-mobile";
 
 export default function EditNarrative() {
     const { narrative, setNarrative } = useNarrativeStore();
     const { generateCarousel, generating, carousel } = useGenerateCarousel();
     const router = useRouter();
+    const isMobile = useMobile();
 
     if (!narrative) {
         return <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-6xl">Narrativa não encontrada</div>;
@@ -61,7 +64,7 @@ export default function EditNarrative() {
                     icon={<FiFileText className="w-5 h-5 text-primary" />}
                     disabled={generating}
                     onChangeValue={handleCentralThesisChange}
-                    rows={4}
+                    rows={isMobile ? 4 : 3}
                 />
 
                 <Textarea
@@ -72,7 +75,7 @@ export default function EditNarrative() {
                     icon={<FaQuoteLeft className="w-5 h-5 text-primary" />}
                     disabled={generating}
                     onChangeValue={handleMainArgumentChange}
-                    rows={8}
+                    rows={isMobile ? 10 : 8}
                 />
 
                 <div className="space-y-4">
@@ -92,6 +95,7 @@ export default function EditNarrative() {
                                     value={step.description}
                                     disabled={generating}
                                     onChangeValue={(value) => handleSequenceChange(index, value)}
+                                    rows={isMobile ? 4 : 1}
                                 />
                             </div>
                         ))}

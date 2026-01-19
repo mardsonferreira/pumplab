@@ -1,6 +1,6 @@
 import { cn } from "@/utils/cn";
 import { MdCheckCircle } from "react-icons/md";
-import { RiArrowGoBackLine } from "react-icons/ri";
+import { LiaUndoAltSolid } from "react-icons/lia";
 import { useState, useCallback, useMemo } from "react";
 
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -58,7 +58,7 @@ export function Textarea({ id, label, value, icon, onChangeValue, containerClass
                 <div className="absolute bottom-3 right-4 flex items-center gap-2">
                     <Tooltip content="Reverter">
                         <button type="button" onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleRevert(e)} disabled={disabled}>
-                            <RiArrowGoBackLine className="w-4 h-4 text-primary" />
+                            <LiaUndoAltSolid className="w-4 h-4 text-primary" />
                         </button>
                     </Tooltip>
                     <Tooltip content="Salvar">
