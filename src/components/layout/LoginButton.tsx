@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Button } from "@/components/ui/Button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -34,17 +34,10 @@ export function LoginButton() {
 
     return (
         <div className="flex flex-col items-center gap-2">
-            <Button
-                variant="primary"
-                onClick={handleGoogleLogin}
-                disabled={isLoading}
-            >
-                {isLoading ? "Loading..." : "Generate Content"}
+            <Button variant="primary" onClick={handleGoogleLogin} disabled={isLoading}>
+                {isLoading ? "Carregando..." : "Gerar Conteúdo"}
             </Button>
-            {error && (
-                <p className="text-sm text-red-500">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-500">{error}</p>}
         </div>
     );
 }
-

@@ -6,28 +6,27 @@ import Slider from "react-slick";
 const images = [
     {
         id: 1,
-        url: "https://picsum.photos/1024/1024"
+        url: "https://picsum.photos/1024/1024",
     },
     {
         id: 2,
-        url: "https://picsum.photos/1024/1024"
+        url: "https://picsum.photos/1024/1024",
     },
     {
         id: 3,
-        url: "https://picsum.photos/800/600"
+        url: "https://picsum.photos/800/600",
     },
     {
         id: 4,
-        url: "https://picsum.photos/800/600"
+        url: "https://picsum.photos/800/600",
     },
     {
         id: 5,
-        url: "https://picsum.photos/800/600"
-    }
-]
+        url: "https://picsum.photos/800/600",
+    },
+];
 
 export function Carousel() {
-
     const settings = {
         dots: true,
         fade: true,
@@ -44,16 +43,16 @@ export function Carousel() {
     };
 
     return (
-        <div className="w-full mx-auto">
+        <div className="mx-auto w-full">
             <div className="slider-container">
                 <Slider {...settings}>
-                    {images.map((image) => (
+                    {images.map(image => (
                         <div key={image.id} className="px-0">
-                            <div className="w-full aspect-square overflow-hidden bg-background">
+                            <div className="aspect-square w-full overflow-hidden bg-background">
                                 <img
                                     src={image.url}
                                     alt={`Carousel image ${image.id}`}
-                                    className="w-full h-full object-cover"
+                                    className="h-full w-full object-cover"
                                     loading="lazy"
                                 />
                             </div>
@@ -62,5 +61,5 @@ export function Carousel() {
                 </Slider>
             </div>
         </div>
-    )
+    );
 }

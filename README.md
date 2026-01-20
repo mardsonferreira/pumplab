@@ -14,17 +14,19 @@ AI-powered content generation tool for personal trainers to create Instagram Ree
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - pnpm (install with `npm install -g pnpm`)
 
 ### Installation
 
 1. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 2. Run the development server:
+
 ```bash
 pnpm dev
 ```
@@ -72,4 +74,3 @@ pnpm build
 ## License
 
 MIT
-

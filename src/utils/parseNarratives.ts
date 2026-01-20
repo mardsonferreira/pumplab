@@ -8,7 +8,7 @@ export function parseNarratives(raw: string) {
     try {
         return JSON.parse(normalized);
     } catch (error) {
-        console.error('Failed to parse narratives:', error);
+        console.error("Failed to parse narratives:", error);
         return [];
     }
 }
@@ -23,7 +23,7 @@ export function parseCarousel(raw: string) {
     try {
         return JSON.parse(normalized);
     } catch (error) {
-        console.error('Failed to parse carousel:', error);
+        console.error("Failed to parse carousel:", error);
         return {};
     }
 }

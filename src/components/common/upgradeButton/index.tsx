@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { GrUpgrade } from "react-icons/gr";
 import Link from "next/link";
@@ -16,9 +16,8 @@ export function UpgradeButton() {
         return (
             <Link
                 href="/pricing"
-                className="group flex items-center justify-center p-2 rounded-md hover:bg-primary/10 transition-colors duration-200"
-                aria-label="Assinar plano premium"
-            >
+                className="hover:bg-primary/10 group flex items-center justify-center rounded-md p-2 transition-colors duration-200"
+                aria-label="Assinar plano premium">
                 <GrUpgrade className={cn(iconClassName, "text-primary")} />
             </Link>
         );
@@ -27,9 +26,8 @@ export function UpgradeButton() {
     return (
         <Button
             variant="primary"
-            className="text-base h-10 shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all duration-200"
-            asChild
-        >
+            className="shadow-primary/10 hover:shadow-primary/20 h-10 text-base shadow-lg transition-all duration-200"
+            asChild>
             <Link href="/pricing" className="group">
                 <GrUpgrade className={cn(iconClassName, "mr-2")} />
                 Assinar

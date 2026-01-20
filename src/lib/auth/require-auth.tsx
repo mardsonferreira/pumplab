@@ -4,7 +4,10 @@ import { ReactNode } from "react";
 
 export async function requireAuth(children: ReactNode) {
     const supabase = await createSupabaseServerClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+        data: { user },
+        error,
+    } = await supabase.auth.getUser();
 
     if (error || !user) {
         redirect("/");
@@ -12,4 +15,3 @@ export async function requireAuth(children: ReactNode) {
 
     return <>{children}</>;
 }
-

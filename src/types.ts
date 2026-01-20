@@ -8,7 +8,7 @@ export type Narrative = {
         title: string;
         description: string;
     }[];
-}
+};
 
 export type CarouselPromptObject = {
     style: {
@@ -20,8 +20,8 @@ export type CarouselPromptObject = {
         text: string;
         image_prompt: string;
     }[];
-}
+};
 
 export type Carousel = {
     images_url: string[];
-}
+};

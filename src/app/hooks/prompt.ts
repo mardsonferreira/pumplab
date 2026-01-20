@@ -112,7 +112,7 @@ Do NOT include explanations, markdown, or additional text.
 
 Do NOT include newline characters ('\n') in the output.
 
-`
+`;
 
 export const carouselMasterPrompt = `
     You are a senior content strategist and visual prompt engineer.
@@ -169,4 +169,4 @@ export const carouselMasterPrompt = `
             }
         ]
     }
-`
+`;

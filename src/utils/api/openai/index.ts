@@ -36,7 +36,7 @@ export async function generateCarouselImages(slides: any[]) {
                     model: "dall-e-3",
                     prompt: slides[i].image_prompt,
                     size: "1024x1024",
-                    response_format: "url"
+                    response_format: "url",
                 });
 
                 const url = image?.data?.[0]?.url ?? "";

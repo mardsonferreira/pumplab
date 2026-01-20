@@ -15,5 +15,5 @@ export function Tooltip({ children, content }: TooltipProps) {
                 </TooltipPrimitive.Portal>
             </TooltipPrimitive.Root>
         </TooltipPrimitive.Provider>
-    )
+    );
 }
