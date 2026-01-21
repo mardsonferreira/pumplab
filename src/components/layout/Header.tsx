@@ -4,12 +4,35 @@ import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 import { LoginButton } from "@/components/layout/LoginButton";
 import { Menu } from "@/components/common/menu";
 import { UpgradeButton } from "@/components/common/upgradeButton";
+import { SubscriptionWithPlan } from "@/types";
 
 export async function Header() {
     const supabase = await createSupabaseServerClient();
     const {
         data: { user },
     } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+        .from("subscription")
+        .select(`
+            status,
+            started_at,
+            plan (
+                name,
+                price,
+                monthly_narratives
+            )
+            `
+        )
+        .eq("profile_id", user?.id)
+        .eq("status", "active")
+        .single<SubscriptionWithPlan>();
+
+    if (error) {
+        console.error(error);
+    }
+
+    const monthlyNarratives = data?.plan?.monthly_narratives ?? 0;
 
     return (
         <header className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 w-full border-b border-neutral-800/60 backdrop-blur">
@@ -28,7 +51,7 @@ export async function Header() {
                                 <div className="h-6 w-px bg-gradient-to-b from-transparent via-neutral-700 to-transparent" />
                                 <div className="flex items-center gap-2">
                                     <span className="text-foreground/70 text-sm font-medium">
-                                        5 Narrativas restantes
+                                        {monthlyNarratives} Narrativas restantes
                                     </span>
                                     <div className="bg-primary/60 h-1.5 w-1.5 animate-pulse rounded-full" />
                                 </div>

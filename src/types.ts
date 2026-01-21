@@ -25,3 +25,14 @@ export type CarouselPromptObject = {
 export type Carousel = {
     images_url: string[];
 };
+
+
+export type SubscriptionWithPlan = {
+    status: string;
+    started_at: string;
+    plan: {
+      name: string;
+      price: number;
+      monthly_narratives: number;
+    };
+  };
