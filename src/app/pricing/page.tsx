@@ -1,37 +1,105 @@
-"use client";
+import { Suspense } from "react";
+import type { Plan } from "@/types";
 
-import { Button } from "@/components/ui/Button";
+import { PlansClient } from "./PlansClient";
+
+export const revalidate = 60 * 60; // 1h
+
+type SupabasePlanRow = {
+    id: string;
+    name: string;
+    price: number | null;
+    billing_cycle: string | null;
+    monthly_narratives: number | null;
+    description: string | null;
+};
+
+async function getPlans(): Promise<Plan[]> {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !anonKey) {
+        throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    }
+
+    const url = new URL(`${supabaseUrl}/rest/v1/plan`);
+    url.searchParams.set("select", "id,name,price,billing_cycle,monthly_narratives,description");
+    url.searchParams.set("order", "price.asc");
+
+    const res = await fetch(url.toString(), {
+        headers: {
+            apikey: anonKey,
+            Authorization: `Bearer ${anonKey}`,
+        },
+        next: { revalidate },
+    });
+
+    if (!res.ok) {
+        throw new Error(`Failed to fetch plans (${res.status})`);
+    }
+
+    const rows = (await res.json()) as SupabasePlanRow[];
+    return (rows ?? []).map((row) => ({
+        id: row.id,
+        name: row.name,
+        price: (row.price ?? 0) / 100,
+        billing_cycle: row.billing_cycle ?? null,
+        monthly_narratives: row.monthly_narratives ?? 0,
+        description: row.description ?? null,
+    }));
+}
+
+function PlansSkeleton() {
+    return (
+        <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                    key={index}
+                    className={`relative rounded-lg border p-8 ${
+                        index === 1 ? "border-primary bg-neutral-900/70" : "border-neutral-800 bg-neutral-900/50"
+                    }`}>
+                    {index === 1 && (
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                            <div className="h-7 w-28 rounded-full bg-primary/40" />
+                        </div>
+                    )}
+                    <div className="mb-6 space-y-3">
+                        <div className="h-7 w-40 rounded bg-neutral-800 animate-pulse" />
+                        <div className="h-4 w-full rounded bg-neutral-800/70 animate-pulse" />
+                        <div className="h-4 w-2/3 rounded bg-neutral-800/70 animate-pulse" />
+                    </div>
+                    <div className="mb-6 space-y-3">
+                        <div className="flex items-baseline gap-2">
+                            <div className="h-8 w-10 rounded bg-neutral-800 animate-pulse" />
+                            <div className="h-10 w-28 rounded bg-neutral-800 animate-pulse" />
+                        </div>
+                        <div className="h-4 w-20 rounded bg-neutral-800/70 animate-pulse" />
+                    </div>
+                    <div className="mb-8 space-y-4">
+                        <div className="h-4 w-4/5 rounded bg-neutral-800/70 animate-pulse" />
+                        <div className="h-4 w-3/5 rounded bg-neutral-800/70 animate-pulse" />
+                    </div>
+                    <div className="h-11 w-full rounded-md bg-neutral-800 animate-pulse" />
+                </div>
+            ))}
+        </div>
+    );
+}
+
+async function PlansSection() {
+    try {
+        const plans = await getPlans();
+        return <PlansClient plans={plans} />;
+    } catch {
+        return (
+            <div className="mb-12 rounded-lg border border-neutral-800 bg-neutral-900/50 p-6 text-neutral-300">
+                Não foi possível carregar os planos agora. Tente recarregar a página em instantes.
+            </div>
+        );
+    }
+}
 
 export default function PricingPage() {
-    const plans = [
-        {
-            name: "Free",
-            price: "0.00",
-            monthlyPosts: 3,
-            isRecurring: false,
-            description: "Perfeito para começar",
-        },
-        {
-            name: "Starter",
-            price: "19,90",
-            monthlyPosts: 10,
-            isRecurring: true,
-            description: "Ideal para profissionais em crescimento",
-        },
-        {
-            name: "Pro",
-            price: "29,90",
-            monthlyPosts: 20,
-            isRecurring: true,
-            description: "Para quem quer maximizar resultados",
-        },
-    ];
-
-    const handleSubscribe = (planName: string) => {
-        // TODO: Implementar lógica de assinatura
-        console.log(`Assinar plano: ${planName}`);
-    };
-
     return (
         <div className="container mx-auto px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
             <div className="mx-auto max-w-6xl">
@@ -44,89 +112,9 @@ export default function PricingPage() {
                     </p>
                 </div>
 
-                <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-3">
-                    {plans.map((plan, index) => (
-                        <div
-                            key={plan.name}
-                            className={`relative rounded-lg border p-8 transition-all duration-200 ${
-                                index === 1
-                                    ? "border-primary bg-neutral-900/70 shadow-lg shadow-primary/10"
-                                    : "border-neutral-800 bg-neutral-900/50"
-                            }`}>
-                            {index === 1 && (
-                                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                                    <span className="bg-primary px-4 py-1 rounded-full text-sm font-semibold text-primary-foreground">
-                                        Mais Popular
-                                    </span>
-                                </div>
-                            )}
-
-                            <div className="mb-6">
-                                <h3 className="mb-2 text-2xl font-bold text-foreground">{plan.name}</h3>
-                                <p className="text-sm text-neutral-400">{plan.description}</p>
-                            </div>
-
-                            <div className="mb-6">
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-4xl font-bold text-foreground">R$</span>
-                                    <span className="text-5xl font-bold text-foreground">{plan.price}</span>
-                                </div>
-                                {plan.isRecurring && (
-                                    <p className="mt-2 text-sm text-neutral-400">por mês</p>
-                                )}
-                            </div>
-
-                            <div className="mb-8 space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-primary/20 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full">
-                                        <svg
-                                            className="h-4 w-4 text-primary"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                    </div>
-                                    <span className="text-foreground">
-                                        <strong className="font-semibold">{plan.monthlyPosts}</strong> posts disponíveis
-                                        por mês
-                                    </span>
-                                </div>
-                                {plan.isRecurring && (
-                                    <div className="flex items-center gap-3">
-                                        <div className="bg-primary/20 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full">
-                                            <svg
-                                                className="h-4 w-4 text-primary"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M5 13l4 4L19 7"
-                                                />
-                                            </svg>
-                                        </div>
-                                        <span className="text-neutral-400">Assinatura recorrente mensalmente</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <Button
-                                variant={index === 1 ? "primary" : "outline"}
-                                className="w-full"
-                                onClick={() => handleSubscribe(plan.name)}>
-                                {plan.name === "Free" ? "Plano Atual" : "Assinar Agora"}
-                            </Button>
-                        </div>
-                    ))}
-                </div>
+                <Suspense fallback={<PlansSkeleton />}>
+                    <PlansSection />
+                </Suspense>
 
                 <div className="space-y-6">
                     <div className="flex items-start gap-4">

@@ -36,3 +36,12 @@ export type SubscriptionWithPlan = {
       monthly_narratives: number;
     };
   };
+
+export type Plan = {
+    id: string;
+    name: string;
+    price: number;
+    billing_cycle: string | null;
+    monthly_narratives: number;
+    description: string | null;
+};
