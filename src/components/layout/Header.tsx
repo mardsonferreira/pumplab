@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 
-import { LoginButton } from "@/components/layout/LoginButton";
+import { LoginLink } from "@/components/layout/LoginButton";
 import { Menu } from "@/components/common/menu";
 import { UpgradeButton } from "@/components/common/upgradeButton";
 import { SubscriptionWithPlan } from "@/types";
@@ -59,7 +59,13 @@ export async function Header() {
                         )}
                     </div>
                     <nav className="flex items-center gap-3">
-                        {!user && <LoginButton />}
+                        {!user && (
+                            <div className="flex items-center gap-2">
+                                <Link href="/pricing" className="text-sm font-medium text-foreground hover:text-primary transition-colors duration-200">Planos</Link>
+                                <div className="h-6 w-px bg-gradient-to-b from-transparent via-neutral-700 to-transparent" />
+                                <LoginLink />
+                            </div>
+                        )}
                         {user && (
                             <>
                                 <UpgradeButton />

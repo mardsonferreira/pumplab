@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 import { redirect } from "next/navigation";
+import { LoginButton } from "@/components/layout/LoginButton";
 
 export default async function Home() {
     const supabase = await createSupabaseServerClient();
@@ -26,9 +27,7 @@ export default async function Home() {
                         consistência, engajar mais e crescer sua presença online.
                     </p>
                     <div className="flex justify-center gap-4">
-                        <Button variant="primary" className="px-8 py-4 text-base">
-                            Gerar Conteúdo
-                        </Button>
+                        <LoginButton />
                     </div>
                 </div>
             </section>
@@ -211,9 +210,7 @@ export default async function Home() {
                         Junte-se a milhares de profissionais de fitness que estão crescendo sua presença online com
                         conteúdo impulsionado por IA. Comece a gerar conteúdo hoje.
                     </p>
-                    <Button variant="primary" className="px-8 py-4 text-base">
-                        Gerar Conteúdo
-                    </Button>
+                    <LoginButton />
                 </div>
             </section>
         </div>
