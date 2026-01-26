@@ -67,10 +67,7 @@ export async function Header() {
                             </div>
                         )}
                         {user && (
-                            <>
-                                <UpgradeButton />
-                                <Menu user={user} />
-                            </>
+                           <Menu user={user} />
                         )}
                     </nav>
                 </div>
