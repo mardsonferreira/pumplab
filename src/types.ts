@@ -44,4 +44,6 @@ export type Plan = {
     billing_cycle: string | null;
     monthly_narratives: number;
     description: string | null;
+    stripe_product_id: string | null;
+    stripe_price_id: string | null;
 };

@@ -1,53 +1,8 @@
 import { Suspense } from "react";
-import type { Plan } from "@/types";
 
 import { PlansClient } from "./PlansClient";
-
-export const revalidate = 60 * 60; // 1h
-
-type SupabasePlanRow = {
-    id: string;
-    name: string;
-    price: number | null;
-    billing_cycle: string | null;
-    monthly_narratives: number | null;
-    description: string | null;
-};
-
-async function getPlans(): Promise<Plan[]> {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !anonKey) {
-        throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
-    }
-
-    const url = new URL(`${supabaseUrl}/rest/v1/plan`);
-    url.searchParams.set("select", "id,name,price,billing_cycle,monthly_narratives,description");
-    url.searchParams.set("order", "price.asc");
-
-    const res = await fetch(url.toString(), {
-        headers: {
-            apikey: anonKey,
-            Authorization: `Bearer ${anonKey}`,
-        },
-        next: { revalidate },
-    });
-
-    if (!res.ok) {
-        throw new Error(`Failed to fetch plans (${res.status})`);
-    }
-
-    const rows = (await res.json()) as SupabasePlanRow[];
-    return (rows ?? []).map((row) => ({
-        id: row.id,
-        name: row.name,
-        price: (row.price ?? 0) / 100,
-        billing_cycle: row.billing_cycle ?? null,
-        monthly_narratives: row.monthly_narratives ?? 0,
-        description: row.description ?? null,
-    }));
-}
+import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { retrievePlans } from "@/lib/supabase/retrieve-plans";
 
 function PlansSkeleton() {
     return (
@@ -86,10 +41,22 @@ function PlansSkeleton() {
     );
 }
 
-async function PlansSection() {
+async function PlansSection({
+    subscribePlanId,
+    user,
+}: {
+    subscribePlanId: string | undefined;
+    user: { id: string } | null;
+}) {
     try {
-        const plans = await getPlans();
-        return <PlansClient plans={plans} />;
+        const plans = await retrievePlans();
+        return (
+            <PlansClient
+                plans={plans}
+                user={user}
+                subscribePlanId={subscribePlanId}
+            />
+        );
     } catch {
         return (
             <div className="mb-12 rounded-lg border border-neutral-800 bg-neutral-900/50 p-6 text-neutral-300">
@@ -99,7 +66,20 @@ async function PlansSection() {
     }
 }
 
-export default function PricingPage() {
+export default async function PricingPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ subscribe?: string }>;
+}) {
+    const params = await searchParams;
+    const subscribePlanId =
+        typeof params.subscribe === "string" ? params.subscribe : undefined;
+
+    const supabase = await createSupabaseServerClient();
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
     return (
         <div className="container mx-auto px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
             <div className="mx-auto max-w-6xl">
@@ -113,7 +93,7 @@ export default function PricingPage() {
                 </div>
 
                 <Suspense fallback={<PlansSkeleton />}>
-                    <PlansSection />
+                    <PlansSection subscribePlanId={subscribePlanId} user={user} />
                 </Suspense>
 
                 <div className="space-y-6">

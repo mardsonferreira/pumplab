@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { cn } from "@/utils/cn";
 import { PiStarFourFill } from "react-icons/pi";
 
@@ -10,7 +11,16 @@ import { Suggestions } from "@/components/dashboard/Suggestions";
 import { WaveLoading } from "@/components/common/wave";
 
 export default function Dashboard() {
+    const searchParams = useSearchParams();
     const [input, setInput] = useState("");
+    const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get("checkout") === "success") {
+            setShowCheckoutSuccess(true);
+            window.history.replaceState({}, "", "/dashboard");
+        }
+    }, [searchParams]);
     const { generateNarrative, generating, narratives } = useGenerateNarrative();
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -31,6 +41,11 @@ export default function Dashboard() {
 
     return (
         <div className="container mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+            {showCheckoutSuccess && (
+                <div className="mb-6 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-center text-sm text-primary">
+                    Assinatura ativada com sucesso! Aproveite seu plano.
+                </div>
+            )}
             <div className="mb-8 flex flex-col items-center justify-center gap-2">
                 <div className="flex items-center gap-2">
                     <PiStarFourFill className="h-8 w-8 text-primary" />

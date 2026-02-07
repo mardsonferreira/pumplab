@@ -1,53 +1,15 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/utils/cn";
-import { useCallback, useState } from "react";
+import { useGoogleLogin } from "@/app/hooks/google-login";
 
-type LoginSharedProps = {
-    nextPath?: string;
-};
-
-function useGoogleLogin({ nextPath = "/dashboard" }: LoginSharedProps = {}) {
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const handleGoogleLogin = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
-
-            const supabase = getSupabaseBrowserClient();
-            const { error: signInError } = await supabase.auth.signInWithOAuth({
-                provider: "google",
-                options: {
-                    redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-                        nextPath,
-                    )}`,
-                },
-            });
-
-            if (signInError) {
-                throw signInError;
-            }
-        } catch (err) {
-            console.error("Error signing in with Google:", err);
-            setError(err instanceof Error ? err.message : "Failed to sign in. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [nextPath]);
-
-    return { handleGoogleLogin, isLoading, error };
-}
-
-export function LoginButton({ nextPath = "/dashboard" }: LoginSharedProps) {
+export function LoginButton({ nextPath = "/dashboard" }: { nextPath?: string }) {
     const { handleGoogleLogin, isLoading, error } = useGoogleLogin({ nextPath });
 
     return (
         <div className="flex flex-col items-center gap-2">
-            <Button variant="primary" onClick={handleGoogleLogin} disabled={isLoading}>
+            <Button variant="primary" onClick={() => handleGoogleLogin()} disabled={isLoading}>
                 {isLoading ? "Carregando..." : "Começar Agora"}
             </Button>
             {error && <p className="text-sm text-red-500">{error}</p>}
@@ -55,18 +17,13 @@ export function LoginButton({ nextPath = "/dashboard" }: LoginSharedProps) {
     );
 }
 
-type LoginLinkProps = LoginSharedProps & {
-    label?: string;
-    className?: string;
-};
-
-export function LoginLink({ label = "Entrar", nextPath = "/dashboard", className }: LoginLinkProps) {
+export function LoginLink({ label = "Entrar", nextPath = "/dashboard", className }: { nextPath?: string; label?: string; className?: string; }) {
     const { handleGoogleLogin, isLoading, error } = useGoogleLogin({ nextPath });
 
     return (
         <button
             type="button"
-            onClick={handleGoogleLogin}
+            onClick={() => handleGoogleLogin()}
             disabled={isLoading}
             aria-busy={isLoading}
             title={error ?? undefined}

@@ -3,7 +3,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 
 import { LoginLink } from "@/components/layout/LoginButton";
 import { Menu } from "@/components/common/menu";
-import { UpgradeButton } from "@/components/common/upgradeButton";
 import { SubscriptionWithPlan } from "@/types";
 
 export async function Header() {
