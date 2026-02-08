@@ -1,7 +1,13 @@
 import { useCallback, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
-export function useGoogleLogin({ nextPath = "/dashboard" }: { nextPath?: string }) {
+export type GoogleLoginReturnType = {
+    handleGoogleLogin: (overrideNextPath?: string) => Promise<void>;
+    isLoading: boolean;
+    error: string | null;
+}
+
+export function useGoogleLogin(nextPath: string = "/dashboard"): GoogleLoginReturnType {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 

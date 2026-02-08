@@ -1,68 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
+
 import { Button } from "@/components/ui/Button";
 import type { Plan } from "@/types";
 import { useGoogleLogin } from "@/app/hooks/google-login";
 
-type User = { id: string } | null;
+export function PlansClient({ plans }: { plans: Plan[] }) {
+    const { handleGoogleLogin } = useGoogleLogin();
 
-export function PlansClient({
-    plans,
-    user,
-    subscribePlanId,
-}: {
-    plans: Plan[];
-    user: User;
-    subscribePlanId: string | undefined;
-}) {
-    const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
-    const startedSubscribeRef = useRef(false);
-    const { handleGoogleLogin } = useGoogleLogin({ nextPath: "/dashboard" });
-
-    const handleSubscribe = async (plan: Plan) => {
-        if (!plan.stripe_price_id || plan.name === "Free") return;
-        setLoadingPlanId(plan.id);
-        try {
-            const res = await fetch("/api/stripe/create-checkout-session", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ planId: plan.id }),
-            });
-            const data = await res.json();
-
-            if (res.status === 401) {
-                setLoadingPlanId(null);
-                handleGoogleLogin(`/pricing?subscribe=${encodeURIComponent(plan.id)}`);
-                return;
-            }
-
-            if (!res.ok) throw new Error(data.error ?? "Falha ao criar sessão de checkout");
-            if (data.url) window.location.href = data.url;
-        } catch (e) {
-            console.error(e);
-            alert(e instanceof Error ? e.message : "Algo deu errado. Tente novamente.");
-        } finally {
-            setLoadingPlanId(null);
-        }
+    const handleSelectPlan = (plan: Plan) => {
+        handleGoogleLogin(`/pricing/subscribe/${encodeURIComponent(plan.id)}`);
     };
-
-    const handleSubscribeClick = (plan: Plan) => {
-        if (!user) {
-            handleGoogleLogin(`/pricing?subscribe=${encodeURIComponent(plan.id)}`);
-            return;
-        }
-        handleSubscribe(plan);
-    };
-
-    // After login redirect with ?subscribe=planId, run checkout once
-    useEffect(() => {
-        if (!subscribePlanId || !user || startedSubscribeRef.current) return;
-        const plan = plans.find((p) => p.id === subscribePlanId);
-        if (!plan || plan.name === "Free" || !plan.stripe_price_id) return;
-        startedSubscribeRef.current = true;
-        handleSubscribe(plan);
-    }, [subscribePlanId, user, plans]);
 
     return (
         <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -136,13 +85,9 @@ export function PlansClient({
                     <Button
                         variant={index === 1 ? "primary" : "outline"}
                         className="w-full"
-                        disabled={plan.name === "Free" || !plan.stripe_price_id || loadingPlanId !== null}
-                        onClick={() => handleSubscribeClick(plan)}>
-                        {plan.name === "Free"
-                            ? "Plano Atual"
-                            : loadingPlanId === plan.id
-                              ? "Redirecionando..."
-                              : "Assinar Agora"}
+                        disabled={plan.name === "Free"}
+                        onClick={() => handleSelectPlan(plan)}>
+                        {plan.name === "Free" ? "Plano Atual" : "Assinar Agora"}
                     </Button>
                 </div>
             ))}

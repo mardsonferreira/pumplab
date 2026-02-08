@@ -41,11 +41,7 @@ function PlansSkeleton() {
     );
 }
 
-async function PlansSection({
-    subscribePlanId,
-    user,
-}: {
-    subscribePlanId: string | undefined;
+async function PlansSection({user}: {
     user: { id: string } | null;
 }) {
     try {
@@ -54,7 +50,6 @@ async function PlansSection({
             <PlansClient
                 plans={plans}
                 user={user}
-                subscribePlanId={subscribePlanId}
             />
         );
     } catch {
@@ -66,15 +61,7 @@ async function PlansSection({
     }
 }
 
-export default async function PricingPage({
-    searchParams,
-}: {
-    searchParams: Promise<{ subscribe?: string }>;
-}) {
-    const params = await searchParams;
-    const subscribePlanId =
-        typeof params.subscribe === "string" ? params.subscribe : undefined;
-
+export default async function PricingPage() {
     const supabase = await createSupabaseServerClient();
     const {
         data: { user },
@@ -93,7 +80,7 @@ export default async function PricingPage({
                 </div>
 
                 <Suspense fallback={<PlansSkeleton />}>
-                    <PlansSection subscribePlanId={subscribePlanId} user={user} />
+                    <PlansSection user={user} />
                 </Suspense>
 
                 <div className="space-y-6">
