@@ -32,31 +32,75 @@ export async function POST(request: Request) {
     }
 
     const session = event.data.object as Stripe.Checkout.Session;
-    const profileId = session.metadata?.profile_id;
-    const planId = session.metadata?.plan_id;
     const subscriptionId =
         typeof session.subscription === "string"
             ? session.subscription
             : session.subscription?.id;
 
-    if (!profileId || !planId || !subscriptionId) {
-        console.error("Webhook checkout.session.completed missing metadata or subscription", {
-            profileId,
-            planId,
-            subscriptionId,
-        });
+    if (!subscriptionId) {
+        console.error("Webhook checkout.session.completed missing subscription id");
         return NextResponse.json(
-            { message: "Missing profile_id, plan_id or subscription id" },
+            { message: "Missing subscription id" },
             { status: 400 },
         );
     }
 
     try {
         const supabase = createSupabaseAdminClient();
+        const stripe = getStripe();
 
-        // 1) Garantir que a subscription seja salva com stripe_subscription_id.
-        // Se a tabela tiver UNIQUE(profile_id): um plano por usuário → upsert por profile_id.
-        // Se a tabela tiver UNIQUE(stripe_subscription_id): histórico por subscription → upsert por stripe_subscription_id.
+        // Resolve Supabase profile_id and plan_id:
+        // 1) Prefer metadata (set at checkout: Supabase profile id + plan id).
+        // 2) Fallback: look up by Stripe IDs (session.customer → profile.stripe_customer_id, subscription price → plan.stripe_price_id).
+        let profileId = session.metadata?.profile_id as string | undefined;
+        let planId = session.metadata?.plan_id as string | undefined;
+
+        if (!profileId || !planId) {
+            const stripeCustomerId =
+                typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
+            let stripePriceId: string | null = null;
+
+            if (session.subscription) {
+                const sub =
+                    typeof session.subscription === "string"
+                        ? await stripe.subscriptions.retrieve(session.subscription)
+                        : session.subscription;
+                const price = sub.items?.data?.[0]?.price;
+                stripePriceId =
+                    typeof price === "string" ? price : (price as { id?: string } | null)?.id ?? null;
+            }
+
+            if (stripeCustomerId) {
+                const { data: profileRow } = await supabase
+                    .from("profile")
+                    .select("id")
+                    .eq("stripe_customer_id", stripeCustomerId)
+                    .single();
+                if (profileRow) profileId = profileRow.id;
+            }
+            if (stripePriceId) {
+                const { data: planRow } = await supabase
+                    .from("plan")
+                    .select("id")
+                    .eq("stripe_price_id", stripePriceId)
+                    .single();
+                if (planRow) planId = planRow.id;
+            }
+        }
+
+        if (!profileId || !planId) {
+            console.error("Webhook could not resolve profile_id or plan_id from metadata or Stripe lookups", {
+                hasMetadataProfile: Boolean(session.metadata?.profile_id),
+                hasMetadataPlan: Boolean(session.metadata?.plan_id),
+                subscriptionId,
+            });
+            return NextResponse.json(
+                { message: "Could not resolve profile_id or plan_id" },
+                { status: 400 },
+            );
+        }
+
+        // Upsert subscription by stripe_subscription_id (UNIQUE in your schema).
         const subscriptionPayload = {
             profile_id: profileId,
             plan_id: planId,
@@ -66,34 +110,18 @@ export async function POST(request: Request) {
         };
 
         const { error: subError } = await supabase.from("subscription").upsert(subscriptionPayload, {
-            onConflict: "profile_id",
+            onConflict: "stripe_subscription_id",
         });
 
         if (subError) {
-            // Fallback: tabela pode ter UNIQUE(stripe_subscription_id) em vez de profile_id
-            const { error: fallbackError } = await supabase.from("subscription").upsert(subscriptionPayload, {
-                onConflict: "stripe_subscription_id",
-            });
-            if (fallbackError) {
-                console.error("Supabase subscription upsert error:", subError, fallbackError);
-                return NextResponse.json(
-                    { message: "Failed to create subscription" },
-                    { status: 500 },
-                );
-            }
+            console.error("Supabase subscription upsert error:", subError);
+            return NextResponse.json(
+                { message: "Failed to create subscription" },
+                { status: 500 },
+            );
         }
 
-        // 2) Atualizar o plano do usuário no profile (free → plano assinado)
-        const { error: profileError } = await supabase
-            .from("profile")
-            .update({ plan_id: planId })
-            .eq("id", profileId);
-
-        if (profileError) {
-            console.error("Supabase profile plan_id update error:", profileError);
-            // Não falhamos o webhook: a subscription já foi salva; profile.plan_id é opcional se o app usar só a tabela subscription
-        }
-
+        // Note: Your profile table has no plan_id column; current plan is derived from subscription table.
         return NextResponse.json({ received: true }, { status: 200 });
     } catch (err) {
         console.error("Webhook handler error:", err);
