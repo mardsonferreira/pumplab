@@ -74,12 +74,12 @@ export async function POST(request: Request) {
             success_url: `${baseUrl}/dashboard?checkout=success`,
             cancel_url: `${baseUrl}/pricing?checkout=canceled`,
             metadata: {
-                profile_id: user.id,
+                profile_id: profile.id,
                 plan_id: plan.id,
             },
             subscription_data: {
                 metadata: {
-                    profile_id: user.id,
+                    profile_id: profile.id,
                     plan_id: plan.id,
                 },
             },

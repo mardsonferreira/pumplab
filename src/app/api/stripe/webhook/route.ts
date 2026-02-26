@@ -48,10 +48,6 @@ export async function POST(request: Request) {
     try {
         const supabase = createSupabaseAdminClient();
         const stripe = getStripe();
-
-        // Resolve Supabase profile_id and plan_id:
-        // 1) Prefer metadata (set at checkout: Supabase profile id + plan id).
-        // 2) Fallback: look up by Stripe IDs (session.customer → profile.stripe_customer_id, subscription price → plan.stripe_price_id).
         let profileId = session.metadata?.profile_id as string | undefined;
         let planId = session.metadata?.plan_id as string | undefined;
 
@@ -100,7 +96,6 @@ export async function POST(request: Request) {
             );
         }
 
-        // Upsert subscription by stripe_subscription_id (UNIQUE in your schema).
         const subscriptionPayload = {
             profile_id: profileId,
             plan_id: planId,

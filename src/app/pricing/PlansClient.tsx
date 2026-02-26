@@ -1,7 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
-
 import { Button } from "@/components/ui/Button";
 import type { Plan } from "@/types";
 import { useGoogleLogin } from "@/app/hooks/google-login";

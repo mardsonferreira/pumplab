@@ -5,7 +5,7 @@ import { cn } from "@/utils/cn";
 import { useGoogleLogin } from "@/app/hooks/google-login";
 
 export function LoginButton({ nextPath = "/dashboard" }: { nextPath?: string }) {
-    const { handleGoogleLogin, isLoading, error } = useGoogleLogin({ nextPath });
+    const { handleGoogleLogin, isLoading, error } = useGoogleLogin(nextPath);
 
     return (
         <div className="flex flex-col items-center gap-2">
@@ -18,7 +18,7 @@ export function LoginButton({ nextPath = "/dashboard" }: { nextPath?: string }) 
 }
 
 export function LoginLink({ label = "Entrar", nextPath = "/dashboard", className }: { nextPath?: string; label?: string; className?: string; }) {
-    const { handleGoogleLogin, isLoading, error } = useGoogleLogin({ nextPath });
+    const { handleGoogleLogin, isLoading, error } = useGoogleLogin(nextPath);
 
     return (
         <button

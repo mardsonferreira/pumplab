@@ -49,7 +49,6 @@ async function PlansSection({user}: {
         return (
             <PlansClient
                 plans={plans}
-                user={user}
             />
         );
     } catch {
