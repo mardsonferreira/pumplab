@@ -5,8 +5,9 @@ from typing import Any
 from openai import OpenAI
 
 from app.core.config import get_settings
+from app.schemas import CarouselMasterResponse
 from app.services.openai_mocks import (
-    MOCK_CAROUSEL_MASTER_PROMPT,
+    MOCK_CAROUSEL_MASTER_JSON,
     MOCK_NARRATIVES,
     mock_carousel_images,
 )
@@ -54,33 +55,85 @@ def generate_narratives(prompt: str) -> str:
     return (msg.content or "").strip()
 
 
-def generate_carousel_master_prompt(prompt: str) -> str:
-    if get_settings().USE_MOCK_LLM:
-        return MOCK_CAROUSEL_MASTER_PROMPT
+CAROUSEL_MASTER_SYSTEM = (
+    "Output valid JSON only. The payload must contain: "
+    "'style' (with color_palette and visual_style), a non-empty 'caption', and exactly 5 'slides'. "
+    "Each slide must include only role, text, and image_prompt. "
+    "Valid role values are: central_thesis, argument, sequence, cta. "
+    "The global style must be reused across all 5 image prompts to keep visual consistency."
+)
 
+
+def generate_carousel_master_prompt(prompt: str) -> CarouselMasterResponse:
+    if get_settings().USE_MOCK_LLM:
+        return CarouselMasterResponse.model_validate_json(MOCK_CAROUSEL_MASTER_JSON)
+
+    # Enforce schema at generation time with OpenAI Structured Outputs to avoid brittle
+    # string parsing and keep runtime payloads aligned with our Pydantic contract.
     client = _client()
-    resp = client.chat.completions.create(
+    resp = client.beta.chat.completions.parse(
         model=NARRATIVES_MODEL,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {"role": "system", "content": CAROUSEL_MASTER_SYSTEM},
+            {"role": "user", "content": prompt},
+        ],
         temperature=0.8,
+        response_format=CarouselMasterResponse,
     )
     if not resp.choices:
-        return ""
+        raise ValueError("Empty carousel master response")
     msg = resp.choices[0].message
-    return (msg.content or "").strip()
+    if getattr(msg, "refusal", None):
+        raise ValueError(f"Model refused carousel master response: {msg.refusal}")
+    parsed = getattr(msg, "parsed", None)
+    if parsed is None:
+        raise ValueError("OpenAI did not return a parsed carousel master response")
+    return parsed
 
 
-def generate_carousel_images(slides: list[dict]) -> list[str]:
+def _build_image_prompt(
+    slide_prompt: str,
+    style: dict | None,
+    role: str | None = None,
+    slide_text: str | None = None,
+) -> str:
+    """Combine global style, slide description, and typography for consistent images."""
+    parts = []
+    if style:
+        cp = (style.get("color_palette") or "").strip()
+        vs = (style.get("visual_style") or "").strip()
+        if cp or vs:
+            style_desc = ", ".join(filter(None, [cp, vs]))
+            parts.append(f"Visual style (apply to entire image): {style_desc}.")
+    if role:
+        parts.append(f"Narrative role for this slide: {role}.")
+    if slide_text:
+        parts.append(f"Overlay text content (Brazilian Portuguese): {slide_text}.")
+    parts.append(
+        "Typography: bold and highly readable text overlay, high contrast, "
+        "safe margins, and layout optimized for Instagram."
+    )
+    parts.append(f"Scene: {slide_prompt}")
+    return " ".join(parts)
+
+
+def generate_carousel_images(
+    slides: list[dict],
+    style: dict | None = None,
+) -> list[str]:
     if get_settings().USE_MOCK_LLM:
         return mock_carousel_images(slides)
 
     client = _client()
     urls: list[str] = []
     for slide in slides:
-        prompt = slide.get("image_prompt") if isinstance(slide, dict) else getattr(slide, "image_prompt", None)
-        if not prompt:
+        raw = slide.get("image_prompt") if isinstance(slide, dict) else getattr(slide, "image_prompt", None)
+        role = slide.get("role") if isinstance(slide, dict) else getattr(slide, "role", None)
+        slide_text = slide.get("text") if isinstance(slide, dict) else getattr(slide, "text", None)
+        if not raw:
             urls.append("")
             continue
+        prompt = _build_image_prompt(raw, style, role=role, slide_text=slide_text)
         try:
             resp = client.images.generate(
                 model=IMAGES_MODEL,

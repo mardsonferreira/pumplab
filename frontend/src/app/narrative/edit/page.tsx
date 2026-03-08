@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { FiFilm, FiImage, FiFileText, FiList } from "react-icons/fi";
 import { FaQuoteLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
@@ -12,9 +12,21 @@ import { useGenerateCarousel } from "@/app/hooks/openai";
 import { WaveLoading } from "@/components/common/wave";
 import { useMobile } from "@/app/hooks/use-mobile";
 
+function validateDraft(narrative: { central_thesis?: string; main_argument?: string; narrative_sequence?: { description?: string }[] }): string | null {
+    if (!narrative.central_thesis?.trim()) return "Tese central é obrigatória.";
+    if (!narrative.main_argument?.trim()) return "Argumento principal é obrigatório.";
+    const seq = narrative.narrative_sequence ?? [];
+    if (seq.length !== 5) return "Preencha os 5 passos da sequência.";
+    for (let i = 0; i < 5; i++) {
+        if (!seq[i]?.description?.trim()) return `Passo ${i + 1} da sequência é obrigatório.`;
+    }
+    return null;
+}
+
 export default function EditNarrative() {
     const { narrative, setNarrative } = useNarrativeStore();
-    const { generateCarousel, generating, carousel, error } = useGenerateCarousel();
+    const { generateCarousel, generating, error } = useGenerateCarousel();
+    const [fieldError, setFieldError] = useState<string | null>(null);
     const router = useRouter();
     const isMobile = useMobile();
 
@@ -29,43 +41,41 @@ export default function EditNarrative() {
     const safeSequence = Array.isArray(narrative.narrative_sequence) ? narrative.narrative_sequence : [];
 
     const handleCentralThesisChange = (value: string) => {
-        setNarrative({
-            ...narrative,
-            central_thesis: value,
-        });
+        setFieldError(null);
+        setNarrative({ ...narrative, central_thesis: value });
     };
 
     const handleMainArgumentChange = (value: string) => {
-        setNarrative({
-            ...narrative,
-            main_argument: value,
-        });
+        setFieldError(null);
+        setNarrative({ ...narrative, main_argument: value });
     };
 
     const handleSequenceChange = (index: number, value: string) => {
+        setFieldError(null);
         const updatedSequence = [...safeSequence];
-        if (!updatedSequence[index]) {
-            return;
-        }
-        updatedSequence[index] = {
-            ...updatedSequence[index],
-            description: value,
-        };
+        if (!updatedSequence[index]) return;
+        updatedSequence[index] = { ...updatedSequence[index], description: value };
         setNarrative({ ...narrative, narrative_sequence: updatedSequence });
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // await generateCarousel(narrative);
-        router.push("/post");
+        const err = validateDraft(narrative);
+        if (err) {
+            setFieldError(err);
+            return;
+        }
+        setFieldError(null);
+        const success = await generateCarousel(narrative);
+        if (success) router.push("/post");
     };
 
     return (
         <div className="container mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-            {error && (
+            {(fieldError || error) && (
                 <div className="mb-6 rounded-lg border border-error/50 bg-error/10 px-4 py-3 text-center text-sm text-error" role="alert">
-                    {error}
-                    <span className="ml-2">Tente novamente.</span>
+                    {fieldError ?? error}
+                    {error && <span className="ml-2">Tente novamente.</span>}
                 </div>
             )}
             <h3 className="mb-8 text-center text-xl font-bold text-foreground">2. Revise e ajuste sua narrativa</h3>

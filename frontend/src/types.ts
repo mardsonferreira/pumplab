@@ -10,13 +10,46 @@ export type Narrative = {
     }[];
 };
 
+/** Editable narrative state after user selects one option; caption required before export. */
+export type NarrativeDraft = {
+    central_thesis: string;
+    main_argument: string;
+    narrative_sequence: { step: number; title: string; description: string }[];
+    caption?: string;
+};
+
+export type CarouselSlideRole = "central_thesis" | "argument" | "sequence" | "cta";
+export type CarouselSlideStatus = "pending" | "success" | "failed";
+
+/** One slide of the generated carousel; image_url and status updated by generation/retry. */
+export type CarouselSlide = {
+    index: number;
+    role: CarouselSlideRole;
+    text: string;
+    image_prompt: string;
+    image_url?: string;
+    status: CarouselSlideStatus;
+    error_message?: string;
+};
+
+/** Preview state before download; ready_to_download only when all 5 slides success and caption present. */
+export type PostPreview = {
+    slides: CarouselSlide[];
+    caption: string;
+    ready_to_download: boolean;
+    last_generation_at?: string;
+    /** Global style from master for image retries. */
+    style?: { color_palette: string; visual_style: string };
+};
+
 export type CarouselPromptObject = {
     style: {
         color_palette: string;
         visual_style: string;
     };
+    caption: string;
     slides: {
-        role: string;
+        role: CarouselSlideRole;
         text: string;
         image_prompt: string;
     }[];
