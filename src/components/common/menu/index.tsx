@@ -83,7 +83,8 @@ export function Menu({ user }: MenuProps) {
                             "focus:bg-neutral-800/50 focus:text-primary",
                             "hover:bg-neutral-800/50 hover:text-primary",
                             "data-[highlighted]:bg-neutral-800/50 data-[highlighted]:text-primary",
-                        )}>
+                        )}
+                        onClick={() => router.push("/subscriptions")}>
                         Gerenciar assinatura
                     </DropdownMenu.Item>
                     <DropdownMenu.Separator className="my-1 h-px bg-neutral-800/60" />
