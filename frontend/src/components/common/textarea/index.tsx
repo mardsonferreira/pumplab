@@ -1,0 +1,108 @@
+import { cn } from "@/utils/cn";
+import { MdCheckCircle } from "react-icons/md";
+import { LiaUndoAltSolid } from "react-icons/lia";
+import { useState, useCallback, useMemo } from "react";
+
+import { Tooltip } from "@/components/ui/Tooltip";
+
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+    id: string;
+    containerClassName?: string;
+    labelClassName?: string;
+    label?: string;
+    value?: string;
+    icon?: React.ReactNode;
+    disabled?: boolean;
+    onChangeValue?: (string: string) => void;
+}
+
+export function Textarea({
+    id,
+    label,
+    value,
+    icon,
+    onChangeValue,
+    containerClassName,
+    labelClassName,
+    disabled,
+    ...props
+}: TextareaProps) {
+    const [previousValue, setPreviousValue] = useState(value || "");
+    const [currentValue, setCurrentValue] = useState(value || "");
+    const hasBeenEdited = useMemo(() => previousValue.trim() !== currentValue.trim(), [previousValue, currentValue]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setCurrentValue(e.target.value);
+    };
+
+    const handleRevert = useCallback(
+        (e: React.MouseEvent<HTMLButtonElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setCurrentValue(previousValue);
+        },
+        [previousValue],
+    );
+
+    const handleConfirm = useCallback(
+        (e: React.MouseEvent<HTMLButtonElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setPreviousValue(currentValue);
+            onChangeValue?.(currentValue);
+        },
+        [previousValue, currentValue, onChangeValue],
+    );
+
+    return (
+        <div className={cn("relative flex flex-col gap-2", containerClassName)}>
+            <div className="flex items-center gap-2">
+                {icon && icon}
+                <label
+                    className={cn("block text-sm font-medium text-foreground text-primary", labelClassName)}
+                    htmlFor={id}>
+                    {label}
+                </label>
+            </div>
+
+            <textarea
+                id={id}
+                value={currentValue}
+                onChange={handleChange}
+                disabled={disabled}
+                className={cn(
+                    "w-full rounded-lg border border-neutral-800 px-4 py-3",
+                    "bg-neutral-900/50 text-foreground placeholder:text-neutral-500",
+                    "focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary",
+                    props.className,
+                )}
+                {...props}
+            />
+
+            {hasBeenEdited && (
+                <div className="absolute bottom-3 right-4 flex items-center gap-2">
+                    <Tooltip content="Reverter">
+                        <button
+                            type="button"
+                            onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleRevert(e)}
+                            disabled={disabled}>
+                            <span className="inline-flex h-4 w-4 items-center justify-center text-primary">
+                                <LiaUndoAltSolid size={16} />
+                            </span>
+                        </button>
+                    </Tooltip>
+                    <Tooltip content="Salvar">
+                        <button
+                            type="button"
+                            onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleConfirm(e)}
+                            disabled={disabled}>
+                            <span className="inline-flex h-4 w-4 items-center justify-center text-confirm">
+                                <MdCheckCircle size={16} />
+                            </span>
+                        </button>
+                    </Tooltip>
+                </div>
+            )}
+        </div>
+    );
+}

@@ -1,0 +1,44 @@
+import { useCallback, useState } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+
+export type GoogleLoginReturnType = {
+    handleGoogleLogin: (overrideNextPath?: string) => Promise<void>;
+    isLoading: boolean;
+    error: string | null;
+}
+
+export function useGoogleLogin(nextPath: string = "/dashboard"): GoogleLoginReturnType {
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleGoogleLogin = useCallback(
+        async (overrideNextPath?: string) => {
+            const redirectPath = overrideNextPath ?? nextPath;
+            try {
+                setIsLoading(true);
+                setError(null);
+
+                const supabase = getSupabaseBrowserClient();
+                const frontendCallbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`;
+                const { error: signInError } = await supabase.auth.signInWithOAuth({
+                    provider: "google",
+                    options: {
+                        redirectTo: frontendCallbackUrl,
+                    },
+                });
+
+                if (signInError) {
+                    throw signInError;
+                }
+            } catch (err) {
+            console.error("Error signing in with Google:", err);
+            setError(err instanceof Error ? err.message : "Failed to sign in. Please try again.");
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [nextPath],
+    );
+
+    return { handleGoogleLogin, isLoading, error };
+}

@@ -2,93 +2,65 @@
 
 AI-powered content generation tool for personal trainers to create Instagram Reels and Carousel posts.
 
-## Tech Stack
+This repository is a **monorepo** with a clear separation between frontend and backend.
 
-- **Next.js 14** (App Router)
-- **React 18** with TypeScript
-- **Tailwind CSS** (dark theme with yellow accent)
-- **Radix UI** for accessible components
-- **pnpm** as package manager
+## Structure
 
-## Getting Started
+| Directory   | Responsibility |
+|------------|-----------------|
+| **frontend/** | Next.js 14 app (App Router). UI, pages, components. Consumes the backend API. |
+| **backend/**  | FastAPI app. API, auth cookies endpoint, Stripe webhooks, OpenAI. |
 
-### Prerequisites
+## Quick start
 
-- Node.js 18+
-- pnpm (install with `npm install -g pnpm`)
-
-### Installation
-
-1. Install dependencies:
+### Backend
 
 ```bash
-pnpm install
+cd backend
+uv sync
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
-2. Run the development server:
+- API docs: http://localhost:8000/docs
+- See [backend/README.md](backend/README.md) for env vars and commands.
+
+### Frontend
 
 ```bash
+cd frontend
+pnpm install
 pnpm dev
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+- App: http://localhost:3000
+- See [frontend/README.md](frontend/README.md) for env vars and backend reference.
 
-### Stripe integration
+### Run both (rodar em paralelo)
 
-The app uses Stripe for subscriptions and syncs with Supabase (`profile.stripe_customer_id`, `subscription` table).
+Use two terminals: run the backend on port 8000 and the frontend on port 3000. Keep `NEXT_PUBLIC_API_URL` (frontend) and `ALLOWED_ORIGINS` (backend) in sync.
 
-1. **Environment variables** (add to `.env.local`):
+From root: `pnpm run dev:backend` (terminal 1) and `pnpm run dev:frontend` (terminal 2).
 
-   - `STRIPE_SECRET_KEY` – Stripe secret key (Dashboard → Developers → API keys).
-   - `STRIPE_WEBHOOK_SECRET` – Webhook signing secret (create a webhook in Stripe pointing to `https://your-domain/api/stripe/webhook`; for local dev use Stripe CLI: `stripe listen --forward-to localhost:3000/api/stripe/webhook`).
-   - `SUPABASE_SERVICE_ROLE_KEY` – Supabase service role key (used by the webhook to write subscriptions; keep secret).
-   - `NEXT_PUBLIC_APP_URL` – Public app URL (e.g. `https://your-domain.com`) for checkout success/cancel redirects; optional, falls back to request origin.
+Configure the Stripe webhook (see backend/README.md) and the Supabase auth redirect to the frontend (e.g. `http://localhost:3000/auth/callback`).
 
-2. **Database**: add Stripe subscription id to `subscription` so webhooks can update/cancel correctly:
+## Auth flow notes
 
-   ```sql
-   ALTER TABLE public.subscription ADD COLUMN IF NOT EXISTS stripe_subscription_id text UNIQUE;
-   ```
+- Supabase OAuth redirect is handled by `frontend/src/app/auth/callback/route.ts` (`/auth/callback` in frontend).
+- That route exchanges the code for a session and performs best-effort backend cookie sync via `POST /auth/set-cookies`.
+- Backend API auth accepts both backend cookies and `Authorization: Bearer <token>` for cross-domain deployments.
 
-3. **Stripe Dashboard**: create Products and Prices for each paid plan, then set `plan.stripe_product_id` and `plan.stripe_price_id` in Supabase for those plans. The Free plan can leave these null.
+## Root scripts
 
-## Project Structure
+From repo root (with pnpm):
 
-```
-src/
-├── app/
-│   ├── layout.tsx      # Root layout with Header/Footer
-│   ├── page.tsx        # Landing page
-│   └── globals.css     # Global styles & Tailwind
-│
-├── components/
-│   ├── layout/
-│   │   ├── Header.tsx  # Site header
-│   │   └── Footer.tsx  # Site footer
-│   │
-│   └── ui/
-│       └── Button.tsx  # Radix UI Button component
-│
-├── utils/
-│   └── cn.ts          # Class name utility (clsx + tailwind-merge)
-│
-└── lib/
-    └── fonts.ts       # Font configuration
-```
+- `pnpm run dev:frontend` — start frontend dev server
+- `pnpm run build:frontend` — build frontend
+- `pnpm run lint:frontend` — lint frontend
 
-## Features
+## Tech stack
 
-- Dark theme with yellow accent colors
-- Responsive design
-- Accessible components with Radix UI
-- TypeScript for type safety
-- ESLint for code quality
-
-## Build
-
-```bash
-pnpm build
-```
+- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS, Radix UI
+- **Backend**: FastAPI, Python 3.12+, Supabase, Stripe, OpenAI
 
 ## License
 
