@@ -193,6 +193,21 @@ MOCK_CAROUSEL_MASTER_PROMPT = (
     "Each slide should deliver one key insight with a supporting visual metaphor."
 )
 
+MOCK_CAROUSEL_MASTER_JSON = json.dumps(
+    {
+        "style": {"color_palette": "dark tones, orange accents", "visual_style": "cinematic, high-contrast"},
+        "caption": "Progresso real vem da pratica constante. Salve e aplique hoje.",
+        "slides": [
+            {"role": "central_thesis", "text": "Disciplina diaria cria resultados.", "image_prompt": "Athlete in gym at dawn, cinematic"},
+            {"role": "argument", "text": "Sistema vence motivacao.", "image_prompt": "Consistent routine, minimalist"},
+            {"role": "sequence", "text": "Passo 1: Comprometa-se.", "image_prompt": "Person writing goals"},
+            {"role": "sequence", "text": "Passo 2: Execute pequeno.", "image_prompt": "Small habit, morning"},
+            {"role": "cta", "text": "Salve e aplique.", "image_prompt": "Call to action, motivational"},
+        ],
+    },
+    ensure_ascii=False,
+)
+
 
 def mock_carousel_images(slides: list[dict]) -> list[str]:
     """Return one placeholder URL per slide when USE_MOCK_LLM is enabled."""

@@ -75,7 +75,7 @@ async def stripe_webhook(request: Request):
         stripe_service.handle_checkout_session_completed(event.data.object, supabase)
     except ValueError as e:
         return JSONResponse(status_code=400, content={"message": str(e)})
-    except Exception as e:
+    except Exception:
         return JSONResponse(
             status_code=500,
             content={"message": "Internal server error"},

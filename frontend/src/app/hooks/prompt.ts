@@ -34,7 +34,7 @@ Each narrative object MUST include the following keys:
 
 'main_argument': a medium-length, impactful paragraph. It must challenge a common belief or reinforce a strong truth.
 
-'narrative_sequence': an ordered array describing how the narrative unfolds. Each item MUST be an object containing:
+'narrative_sequence': an ordered array describing how the narrative unfolds. Each narrative_sequence MUST contain EXACTLY 5 steps. Each item MUST be an object containing:
 
 * 'step': number starting at 1
 * 'title': short, Instagram-friendly title
@@ -60,35 +60,35 @@ JSON STRUCTURE EXAMPLE
 ────────────────────────────
 [
   {
-    'id': 'random uuid',
-    'theme': 'Consistency beats motivation',
-    'central_thesis': 'Real progress is built through repetition, not emotional spikes.',
-    'main_argument': 'You do not need motivation. You need a system...',
-    'narrative_sequence': [
+    "id": "random uuid",
+    "theme": "Consistency beats motivation",
+    "central_thesis": "Real progress is built through repetition, not emotional spikes.",
+    "main_argument": "You do not need motivation. You need a system...",
+    "narrative_sequence": [
       {
-        'step': 1,
-        'title': 'The Motivation Myth',
-        'description': 'Expose the belief that motivation must come before action.'
+        "step": 1,
+        "title": "The Motivation Myth",
+        "description": "Expose the belief that motivation must come before action."
       },
       {
-        'step': 2,
-        'title': 'Why People Get Stuck',
-        'description': 'Explain how waiting for the right feeling leads to inaction.'
+        "step": 2,
+        "title": "Why People Get Stuck",
+        "description": "Explain how waiting for the right feeling leads to inaction."
       },
       {
-        'step': 3,
-        'title': 'A Better Approach',
-        'description': 'Reframe consistency as small actions taken regardless of mood.'
+        "step": 3,
+        "title": "A Better Approach",
+        "description": "Reframe consistency as small actions taken regardless of mood."
       },
       {
-        'step': 4,
-        'title': 'Make It Practical',
-        'description': 'Share examples of low-effort habits that sustain progress.'
+        "step": 4,
+        "title": "Make It Practical",
+        "description": "Share examples of low-effort habits that sustain progress."
       },
       {
-        'step': 5,
-        'title': 'The Final Lesson',
-        'description': 'Encourage choosing consistency over motivation.'
+        "step": 5,
+        "title": "The Final Lesson",
+        "description": "Encourage choosing consistency over motivation."
       }
     ]
   }
@@ -100,7 +100,7 @@ OUTPUT RULES
 
 Return ONLY valid JSON.
 
-Use SINGLE QUOTES for all keys and string values.
+Use DOUBLE QUOTES for all keys and string values.
 
 The root element MUST be a JSON array.
 
@@ -114,6 +114,21 @@ Do NOT include newline characters ('\n') in the output.
 
 `;
 
+import type { NarrativeDraft } from "@/types";
+
+/** Builds the narrative summary for the carousel master prompt (theme, thesis, argument, ordered sequence). */
+export function buildCarouselPromptFromDraft(draft: NarrativeDraft): string {
+    const draftWithTheme = draft as NarrativeDraft & { theme?: string };
+    return JSON.stringify({
+        ...(typeof draftWithTheme.theme === "string"
+            ? { theme: draftWithTheme.theme }
+            : {}),
+        central_thesis: draft.central_thesis,
+        main_argument: draft.main_argument,
+        narrative_sequence: draft.narrative_sequence,
+    });
+}
+
 export const carouselMasterPrompt = `
     You are a senior content strategist and visual prompt engineer.
 
@@ -122,13 +137,15 @@ export const carouselMasterPrompt = `
     ==========================
 
     Your task:
-    Generate an Instagram carousel with 7 slides based on the provided narrative.
+    Generate an Instagram carousel with exactly 5 slides based on the provided narrative.
+    Preserve the narrative theme and the order of steps (1 to 5) in every slide.
 
     The narrative consists of:
 
+    * Theme (if present)
     * Central Thesis
     * Main Argument
-    * Narrative Sequence
+    * Narrative Sequence (5 steps, in order)
 
     Color palette: dark tones, black, gray, orange accents
     Visual style: cinematic, realistic, high-contrast lighting
@@ -136,8 +153,8 @@ export const carouselMasterPrompt = `
     Rules:
 
     * Slide 1: image representing the central thesis alongside with the central thesis text
-    * Slide 2: image representing the main argument alongside with the main argument text
-    * Slides 3 to 7: narrative sequence
+    * Slide 2: image representing the main argument alongside with the main argument text (use role "argument")
+    * Slides 3 to 5: narrative sequence (use role "sequence" for 3–4, "cta" for slide 5)
     * Each slide must contain:
     * short, impactful text (max. 12 words)
     * an image_prompt that visually represents the message alongside with the narrative sequence text
@@ -152,6 +169,7 @@ export const carouselMasterPrompt = `
     * Do not include any English words, expressions, or structures in the generated content
     * Return ONLY valid JSON
     * Do not include line breaks
+    * Include a non-empty caption field in Brazilian Portuguese
     * Do NOT include explanations, markdown, or additional text
     * Do NOT include newline characters ('\n') in the output
 
@@ -161,9 +179,10 @@ export const carouselMasterPrompt = `
                 "color_palette": "",
                 "visual_style": ""
             },
+        "caption": "",
         "slides": [
             {
-                "role": "central_thesis | main_argument | sequence",
+                "role": "central_thesis | argument | sequence | cta",
                 "text": "",
                 "image_prompt": ""
             }
