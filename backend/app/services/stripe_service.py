@@ -154,3 +154,41 @@ def handle_checkout_session_completed(session: stripe.checkout.Session, supabase
         "started_at": datetime.utcnow().isoformat() + "Z",
     }
     supabase.table("subscription").upsert(payload, on_conflict="stripe_subscription_id").execute()
+
+
+def get_subscription_payment_info(stripe_subscription_id: str) -> dict | None:
+    if not stripe_subscription_id:
+        return None
+    st = get_stripe()
+    try:
+        sub = st.Subscription.retrieve(
+            stripe_subscription_id,
+            expand=["default_payment_method"],
+        )
+    except stripe.error.InvalidRequestError:
+        return None
+    if not sub:
+        return None
+    result = {
+        "next_charge_at": None,
+        "card_brand": None,
+        "card_last4": None,
+    }
+    current_period_end = sub.get("items").get("data")[0].get("current_period_end")
+    if current_period_end:
+        result["next_charge_at"] = datetime.utcfromtimestamp(current_period_end).isoformat() + "Z"
+    pm = sub.default_payment_method
+    if pm is None:
+        return result
+    if isinstance(pm, str):
+        try:
+            pm = st.PaymentMethod.retrieve(pm)
+        except stripe.error.InvalidRequestError:
+            return result
+    if hasattr(pm, "card") and pm.card:
+        exp_month = getattr(pm.card, "exp_month", None) or (pm.card.get("exp_month") if isinstance(pm.card, dict) else None)
+        exp_year = getattr(pm.card, "exp_year", None) or (pm.card.get("exp_year") if isinstance(pm.card, dict) else None)
+        result["card_brand"] = getattr(pm.card, "brand", None) or (pm.card.get("brand") if isinstance(pm.card, dict) else None)
+        result["card_last4"] = getattr(pm.card, "last4", None) or (pm.card.get("last4") if isinstance(pm.card, dict) else None)
+        result["card_expires_at"] = f"{exp_month}/{exp_year}"
+    return result

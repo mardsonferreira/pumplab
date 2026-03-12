@@ -6,7 +6,9 @@ import { Payments } from "./payments";
 import { Help } from "./help";
 import { Cancelation } from "./cancelation";
 
-export function Subscriptions() {
+import { SubscriptionResponse } from "@/utils/api/subscriptions/fetch-subscriptions";
+
+export function Subscriptions({ subscription }: { subscription: SubscriptionResponse }) {
     return (
         <div className="container mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
             <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -20,21 +22,21 @@ export function Subscriptions() {
             </header>
 
             <div className="flex flex-col gap-4 mt-8 md:hidden">
-                <General />
-                <Features />
-                <Payments />
+                <General subscription={subscription} />
+                <Features monthlyNarratives={subscription.plan.monthlyNarratives} />
+                <Payments subscription={subscription} />
                 <Help />
                 <Cancelation />
             </div>
 
             <div className="hidden mt-8 md:grid md:grid-cols-[2fr_1fr] md:gap-4 md:items-start">
                 <div className="flex flex-col gap-4">
-                    <General />
-                    <Features />
+                    <General subscription={subscription} />
+                    <Features monthlyNarratives={subscription.plan.monthlyNarratives} />
                     <Cancelation />
                 </div>
                 <div className="flex flex-col gap-4">
-                    <Payments />
+                    <Payments subscription={subscription} />
                     <Help />
                 </div>
             </div>
