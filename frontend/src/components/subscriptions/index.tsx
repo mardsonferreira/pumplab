@@ -1,14 +1,22 @@
+"use client";
+
 import { Button } from "@/components/ui/Button";
+import { SubscriptionResponse } from "@/utils/api/subscriptions/fetch-subscriptions";
+import { httpUtil } from "@/utils/common/http/client";
 
 import { General } from "./general";
 import { Features } from "./features";
 import { Payments } from "./payments";
 import { Help } from "./help";
 import { Cancelation } from "./cancelation";
-
-import { SubscriptionResponse } from "@/utils/api/subscriptions/fetch-subscriptions";
+import { useSubscriptions } from "./hooks";
 
 export function Subscriptions({ subscription }: { subscription: SubscriptionResponse }) {
+    const { handleCancelSubscription } = useSubscriptions(httpUtil);
+
+    const onCancelSubscription = async () => {
+        await handleCancelSubscription(subscription.id);
+    };
     return (
         <div className="container mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
             <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -26,14 +34,14 @@ export function Subscriptions({ subscription }: { subscription: SubscriptionResp
                 <Features monthlyNarratives={subscription.plan.monthlyNarratives} />
                 <Payments subscription={subscription} />
                 <Help />
-                <Cancelation />
+                <Cancelation onCancelSubscription={onCancelSubscription}/>
             </div>
 
             <div className="hidden mt-8 md:grid md:grid-cols-[2fr_1fr] md:gap-4 md:items-start">
                 <div className="flex flex-col gap-4">
                     <General subscription={subscription} />
                     <Features monthlyNarratives={subscription.plan.monthlyNarratives} />
-                    <Cancelation />
+                    <Cancelation onCancelSubscription={onCancelSubscription}/>
                 </div>
                 <div className="flex flex-col gap-4">
                     <Payments subscription={subscription} />

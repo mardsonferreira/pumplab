@@ -5,4 +5,5 @@ export type RequestInit = Omit<Parameters<typeof fetch>[1], "body"> & {
 
 export interface HttpUtil {
     get<T>(path: string, init?: RequestInit): Promise<T>;
+    del<T>(path: string, init?: RequestInit): Promise<T>;
 }

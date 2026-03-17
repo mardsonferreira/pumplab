@@ -1,4 +1,4 @@
-import { env } from "@/utils/types/server-environment";
+import { env } from "@/utils/types/client-environment";
 import { RequestInit } from "@/utils/common/http";
 import { objectToCamelCase } from "@/utils/common/string/object-to-camel-case";
 import { objectToSnakeCase } from "@/utils/common/string/object-to-snake-case";
