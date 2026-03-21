@@ -2,6 +2,9 @@ import { BsCheckCircle } from "react-icons/bs";
 
 
 export function Features({ monthlyNarratives }: { monthlyNarratives: number }) {
+    const postAmountMessage = monthlyNarratives > 1 ? "posts mensais" : "post mensal";
+    const postDescription = monthlyNarratives > 1 ? "posts disponíveis por mês" : "post disponível por mês";
+
     return (
         <div className="flex flex-col bg-slate-900 rounded-lg p-6 gap-4">
             <span className="text-lg font-bold">Recursos</span>
@@ -9,8 +12,8 @@ export function Features({ monthlyNarratives }: { monthlyNarratives: number }) {
                 <div className="flex items-start gap-3">
                     <BsCheckCircle size={20} className="text-yellow-400 mt-1" />
                     <div className="flex flex-col justify-start">
-                        <span className="text-md font-bold">{monthlyNarratives} posts mensais</span>
-                        <span className="text-sm text-slate-400">Crie até {monthlyNarratives} posts por mês sem custo adicional</span>
+                        <span className="text-md font-bold">{monthlyNarratives} {postAmountMessage}</span>
+                        <span className="text-sm text-slate-400">{monthlyNarratives} {postDescription} sem custo adicional</span>
                     </div>
                 </div>
 

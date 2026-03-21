@@ -96,11 +96,8 @@ export interface Subscription {
     startedAt: string;
     endsAt: null;
     stripeSubscriptionId: string;
-    /** Next billing date (ISO string). From Stripe. */
     nextChargeAt?: string | null;
-    /** Card brand, e.g. "visa", "mastercard". From Stripe. */
     cardBrand?: string | null;
-    /** Last 4 digits of the card. From Stripe. */
     cardLast4?: string | null;
     plan: {
         id: string;

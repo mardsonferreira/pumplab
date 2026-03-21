@@ -1,16 +1,28 @@
 import { HttpUtil } from "@/utils/common/http";
 import { deleteSubscription } from "@/utils/api/subscriptions/delete-subscription";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-export function useSubscriptions(httpUtil: HttpUtil) {
+export interface useSubscriptionsReturnType {
+    loading: boolean;
+    handleCancelSubscription: (subscriptionId: string) => Promise<void>;
+
+}
+
+export function useSubscriptions(httpUtil: HttpUtil): useSubscriptionsReturnType {
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
     const handleCancelSubscription = async (subscriptionId: string) => {
         try {
-            const response = await deleteSubscription(httpUtil, subscriptionId);
-            return response;
+            setLoading(true);
+            await deleteSubscription(httpUtil, subscriptionId);
+            router.refresh();
         } catch (error) {
             console.error(error);
-            return null;
+        } finally {
+            setLoading(false);
         }
     };
 
-    return { handleCancelSubscription };
+    return { loading, handleCancelSubscription };
 }

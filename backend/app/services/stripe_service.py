@@ -192,3 +192,13 @@ def get_subscription_payment_info(stripe_subscription_id: str) -> dict | None:
         result["card_last4"] = getattr(pm.card, "last4", None) or (pm.card.get("last4") if isinstance(pm.card, dict) else None)
         result["card_expires_at"] = f"{exp_month}/{exp_year}"
     return result
+
+def cancel_subscription(stripe_subscription_id: str) -> None:
+    if not stripe_subscription_id:
+        raise ValueError("Missing stripe subscription id")
+    st = get_stripe()
+    try:
+        st.Subscription.delete(stripe_subscription_id)
+    except stripe.error.InvalidRequestError as e:
+        message = getattr(e, "user_message", None) or str(e)
+        raise ValueError(f"Stripe subscription cancellation failed: {message}")

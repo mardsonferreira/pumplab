@@ -20,6 +20,10 @@ export default async function SubscriptionsPage() {
 
     const subscription = await fetchSubscriptions(httpUtil, user.id);
 
+    if (!subscription.id) {
+        redirect("/pricing");
+    }
+
     return (
         <Subscriptions subscription={subscription} />
     );

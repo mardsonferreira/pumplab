@@ -12,11 +12,13 @@ import { Cancelation } from "./cancelation";
 import { useSubscriptions } from "./hooks";
 
 export function Subscriptions({ subscription }: { subscription: SubscriptionResponse }) {
-    const { handleCancelSubscription } = useSubscriptions(httpUtil);
+    const { loading, handleCancelSubscription } = useSubscriptions(httpUtil);
+    const freePlan = subscription.plan.name === "Free";
 
     const onCancelSubscription = async () => {
         await handleCancelSubscription(subscription.id);
     };
+
     return (
         <div className="container mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
             <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -32,19 +34,19 @@ export function Subscriptions({ subscription }: { subscription: SubscriptionResp
             <div className="flex flex-col gap-4 mt-8 md:hidden">
                 <General subscription={subscription} />
                 <Features monthlyNarratives={subscription.plan.monthlyNarratives} />
-                <Payments subscription={subscription} />
+                {!freePlan && <Payments subscription={subscription} />}
                 <Help />
-                <Cancelation onCancelSubscription={onCancelSubscription}/>
+                <Cancelation loading={loading} onCancelSubscription={onCancelSubscription}/>
             </div>
 
             <div className="hidden mt-8 md:grid md:grid-cols-[2fr_1fr] md:gap-4 md:items-start">
                 <div className="flex flex-col gap-4">
                     <General subscription={subscription} />
                     <Features monthlyNarratives={subscription.plan.monthlyNarratives} />
-                    <Cancelation onCancelSubscription={onCancelSubscription}/>
+                    <Cancelation loading={loading} onCancelSubscription={onCancelSubscription}/>
                 </div>
                 <div className="flex flex-col gap-4">
-                    <Payments subscription={subscription} />
+                    {!freePlan && <Payments subscription={subscription} />}
                     <Help />
                 </div>
             </div>
