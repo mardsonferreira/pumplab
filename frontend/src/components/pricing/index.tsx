@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 
 import { PlansSkeleton } from "./plansSkeleton";
 import { Plan as PlanComponent } from "./plan";
@@ -8,15 +8,19 @@ import { User } from "@supabase/supabase-js";
 import { Plan } from "@/types";
 
 import { ConfirmPlanModal } from "./ConfirmPlanModal";
+import { useSubscriptionConfirm } from "./hooks/useSubscriptionConfirm";
 
-export function Pricing({ plans, user }: { plans: Plan[], user: User | null }) {
-    const [ selectedPlan, setSelectedPlan ] = useState<Plan | null>(null);
-    const [ isConfirmPlanModalOpen, setIsConfirmPlanModalOpen ] = useState(false);
-
-    const handleSelectPlan = (planId: string) => {
-        setSelectedPlan(plans.find((plan) => plan.id === planId) ?? null);
-        setIsConfirmPlanModalOpen(true);
-    };
+export function Pricing({ plans, user }: { plans: Plan[]; user: User | null }) {
+    const {
+        selectedPlan,
+        isModalOpen,
+        setIsModalOpen,
+        isLoading,
+        error,
+        activeSubscription,
+        handleSelectPlan,
+        handleConfirm,
+    } = useSubscriptionConfirm(user, plans);
 
     return (
         <div className="container mx-auto px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
@@ -92,7 +96,18 @@ export function Pricing({ plans, user }: { plans: Plan[], user: User | null }) {
                     </div>
                 </div>
             </div>
-            {selectedPlan && <ConfirmPlanModal plan={selectedPlan} open={isConfirmPlanModalOpen} onOpenChange={setIsConfirmPlanModalOpen} />}
+
+            {selectedPlan && (
+                <ConfirmPlanModal
+                    plan={selectedPlan}
+                    open={isModalOpen}
+                    onOpenChange={setIsModalOpen}
+                    onConfirm={handleConfirm}
+                    isLoading={isLoading}
+                    error={error}
+                    activeSubscriptionPlanName={activeSubscription?.plan?.name ?? null}
+                />
+            )}
         </div>
     );
 }

@@ -1,61 +1,28 @@
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { Plan } from "@/types";
-import { apiFetch, BackendUnavailableError } from "@/lib/api/client";
 import { Loader2, X } from "lucide-react";
+
+interface ConfirmPlanModalProps {
+    plan: Plan;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onConfirm: () => void;
+    isLoading: boolean;
+    error: string | null;
+    activeSubscriptionPlanName?: string | null;
+}
 
 export function ConfirmPlanModal({
     plan,
     open,
     onOpenChange,
-}: {
-    plan: Plan;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-}) {
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const router = useRouter();
-
-    const handleConfirm = async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            const res = await apiFetch("/stripe/create-checkout-session", {
-                method: "POST",
-                body: JSON.stringify({ planId: plan.id }),
-            });
-            const data = await res.json().catch(() => ({}));
-
-            if (!res.ok) {
-                if (res.status === 401) {
-                    setError("Faça login para continuar.");
-                    window.location.href = `/pricing?login=required&next=${encodeURIComponent(window.location.pathname)}`;
-                    return;
-                }
-                throw new Error(data.error ?? "Erro ao criar sessão de checkout");
-            }
-
-            if (data?.url) {
-                window.location.href = data.url;
-            } else {
-                throw new Error("Resposta inválida do servidor");
-            }
-        } catch (err) {
-            const message =
-                err instanceof BackendUnavailableError
-                    ? err.message
-                    : err instanceof Error
-                      ? err.message
-                      : "Erro ao confirmar assinatura. Tente novamente.";
-            setError(message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    onConfirm,
+    isLoading,
+    error,
+    activeSubscriptionPlanName,
+}: ConfirmPlanModalProps) {
+    const isChangingPlan = !!activeSubscriptionPlanName;
 
     return (
         <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -65,12 +32,9 @@ export function ConfirmPlanModal({
                     <div className="max-h-[min(90vh,calc(100dvh-1.5rem))] overflow-y-auto p-6 sm:p-8">
                         <header className="pb-6">
                             <div className="flex items-center gap-2">
-                                <span
-                                    className="h-9 w-9 shrink-0"
-                                    aria-hidden
-                                />
+                                <span className="h-9 w-9 shrink-0" aria-hidden />
                                 <Dialog.Title className="min-w-0 flex-1 text-center text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                                    Confirme sua assinatura
+                                    {isChangingPlan ? "Trocar de plano" : "Confirme sua assinatura"}
                                 </Dialog.Title>
                                 <Dialog.Close asChild>
                                     <button
@@ -106,6 +70,18 @@ export function ConfirmPlanModal({
                             )}
                         </section>
 
+                        {isChangingPlan && (
+                            <p className="mb-4 rounded-lg border border-amber-800/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-300">
+                                Sua assinatura atual ({activeSubscriptionPlanName}) será cancelada ao confirmar.
+                            </p>
+                        )}
+
+                        {error && (
+                            <p className="mb-4 rounded-lg border border-red-800/40 bg-red-950/30 px-4 py-3 text-sm text-red-400">
+                                {error}
+                            </p>
+                        )}
+
                         <footer className="flex flex-col-reverse gap-3 pt-6 sm:flex-row sm:justify-end sm:gap-4">
                             <Button
                                 variant="outline"
@@ -116,7 +92,7 @@ export function ConfirmPlanModal({
                             <Button
                                 variant="primary"
                                 disabled={isLoading}
-                                onClick={handleConfirm}
+                                onClick={onConfirm}
                             >
                                 {isLoading ? (
                                     <>

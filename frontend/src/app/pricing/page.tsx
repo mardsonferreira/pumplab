@@ -1,6 +1,5 @@
-import React, { Suspense } from "react";
+import React from "react";
 
-import { PlansClient } from "./PlansClient";
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 import { retrievePlans } from "@/lib/supabase/retrieve-plans";
 import { Pricing } from "@/components/pricing";
