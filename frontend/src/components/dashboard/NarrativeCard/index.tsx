@@ -14,8 +14,8 @@ export function NarrativeCard({ narrative }: NarrativeCardProps) {
     const { setNarrative } = useNarrativeStore();
     const router = useRouter();
     const legacyNarrative = narrative as unknown as Record<string, string | undefined>;
-    const title = narrative.central_thesis || legacyNarrative.title || "Narrativa sem titulo";
-    const argument = narrative.main_argument || legacyNarrative.body || "Sem descricao para esta narrativa.";
+    const title = narrative.centralThesis || legacyNarrative.title || "Narrativa sem titulo";
+    const argument = narrative.mainArgument || legacyNarrative.body || "Sem descricao para esta narrativa.";
 
     const handleClick = () => {
         setNarrative(narrative);

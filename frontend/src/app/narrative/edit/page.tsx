@@ -12,10 +12,10 @@ import { useGenerateCarousel } from "@/app/hooks/openai";
 import { WaveLoading } from "@/components/common/wave";
 import { useMobile } from "@/app/hooks/use-mobile";
 
-function validateDraft(narrative: { central_thesis?: string; main_argument?: string; narrative_sequence?: { description?: string }[] }): string | null {
-    if (!narrative.central_thesis?.trim()) return "Tese central é obrigatória.";
-    if (!narrative.main_argument?.trim()) return "Argumento principal é obrigatório.";
-    const seq = narrative.narrative_sequence ?? [];
+function validateDraft(narrative: { centralThesis?: string; mainArgument?: string; narrativeSequence?: { description?: string }[] }): string | null {
+    if (!narrative.centralThesis?.trim()) return "Tese central é obrigatória.";
+    if (!narrative.mainArgument?.trim()) return "Argumento principal é obrigatório.";
+    const seq = narrative.narrativeSequence ?? [];
     if (seq.length !== 5) return "Preencha os 5 passos da sequência.";
     for (let i = 0; i < 5; i++) {
         if (!seq[i]?.description?.trim()) return `Passo ${i + 1} da sequência é obrigatório.`;
@@ -38,16 +38,16 @@ export default function EditNarrative() {
         );
     }
 
-    const safeSequence = Array.isArray(narrative.narrative_sequence) ? narrative.narrative_sequence : [];
+    const safeSequence = Array.isArray(narrative.narrativeSequence) ? narrative.narrativeSequence : [];
 
     const handleCentralThesisChange = (value: string) => {
         setFieldError(null);
-        setNarrative({ ...narrative, central_thesis: value });
+        setNarrative({ ...narrative, centralThesis: value });
     };
 
     const handleMainArgumentChange = (value: string) => {
         setFieldError(null);
-        setNarrative({ ...narrative, main_argument: value });
+        setNarrative({ ...narrative, mainArgument: value });
     };
 
     const handleSequenceChange = (index: number, value: string) => {
@@ -55,7 +55,7 @@ export default function EditNarrative() {
         const updatedSequence = [...safeSequence];
         if (!updatedSequence[index]) return;
         updatedSequence[index] = { ...updatedSequence[index], description: value };
-        setNarrative({ ...narrative, narrative_sequence: updatedSequence });
+        setNarrative({ ...narrative, narrativeSequence: updatedSequence });
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -85,7 +85,7 @@ export default function EditNarrative() {
                     containerClassName="space-y-2"
                     id="central_thesis"
                     label="Tese Central"
-                    value={narrative.central_thesis ?? ""}
+                    value={narrative.centralThesis ?? ""}
                     icon={
                         <span className="inline-flex h-5 w-5 items-center justify-center text-primary">
                             <FiFileText size={20} />
@@ -100,7 +100,7 @@ export default function EditNarrative() {
                     containerClassName="space-y-2"
                     id="main_argument"
                     label="Argumento Principal"
-                    value={narrative.main_argument ?? ""}
+                    value={narrative.mainArgument ?? ""}
                     icon={
                         <span className="inline-flex h-5 w-5 items-center justify-center text-primary">
                             <FaQuoteLeft size={20} />
