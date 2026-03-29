@@ -101,8 +101,30 @@ async function post<T>(path: string, init: RequestInit = {}): Promise<T> {
     return objectToCamelCase(result) as T;
 }
 
+async function postBlob(path: string, init: RequestInit = {}): Promise<Blob> {
+    const body = init.body ? JSON.stringify(objectToSnakeCase(init.body)) : undefined;
+
+    const response = await fetch(getUrl(path), {
+        ...init,
+        method: "POST",
+        credentials: "include",
+        headers: await getHeaders(),
+        body,
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        const message =
+            (errorBody as { error?: string }).error ?? `Failed to fetch ${path}`;
+        throw new Error(message);
+    }
+
+    return response.blob();
+}
+
 export const httpUtil = {
     get,
     del,
     post,
+    postBlob,
 };

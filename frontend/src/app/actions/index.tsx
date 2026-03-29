@@ -7,7 +7,12 @@ export async function getTotalPostsGenerated(year: number, month: number) {
     if (!supabase) {
         throw new Error("Supabase not configured");
     }
-    const {data, error} = await supabase.from("post_usage").select("posts_generated").eq("year", year).eq("month", month).single();
+    const { data, error } = await supabase
+        .from("post_usage")
+        .select("posts_generated")
+        .eq("year", year)
+        .eq("month", month)
+        .maybeSingle();
 
     if (error) {
         throw new Error(error.message);
@@ -21,7 +26,9 @@ export async function updateTotalPostsGenerated(year: number, month: number, val
     if (!supabase) {
         throw new Error("Supabase not configured");
     }
-    const {error} = await supabase.from("post_usage").update({posts_generated: value}).eq("year", year).eq("month", month).single();
+    const { error } = await supabase
+        .from("post_usage")
+        .upsert({ year, month, posts_generated: value }, { onConflict: "year,month" });
 
     if (error) {
         throw new Error(error.message);

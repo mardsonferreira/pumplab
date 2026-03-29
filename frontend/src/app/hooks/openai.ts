@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-    generateNarratives,
-    generateCarouselMasterPrompt,
-    generateCarouselImages,
-} from "@/utils/api/openai";
-import type { CarouselSlide, Narrative, PostPreview } from "@/types";
-import { narrativePrompt, carouselMasterPrompt, buildCarouselPromptFromDraft } from "./prompt";
+
+import type { CarouselSlide, Narrative } from "@/types";
 import { BackendUnavailableError } from "@/lib/api/client";
 import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
+import { generateNarratives } from "@/utils/api/openai/generate-narratives";
+import { generateCarouselMasterPrompt } from "@/utils/api/openai/generate-carousel-master-prompt";
+import { generateCarouselImages } from "@/utils/api/openai/generate-carousel-images";
+
+import { narrativePrompt, carouselMasterPrompt, buildCarouselPromptFromDraft } from "./prompt";
 
 function toCarouselSlide(
-    item: { role: string; text: string; image_prompt: string },
+    item: { role: string; text: string; imagePrompt: string },
     index: number,
     imageUrl?: string,
     status: CarouselSlide["status"] = "pending"
@@ -24,7 +24,7 @@ function toCarouselSlide(
         index: index + 1,
         role,
         text: item.text,
-        image_prompt: item.image_prompt,
+        image_prompt: item.imagePrompt,
         image_url: imageUrl,
         status,
         ...(status === "failed" && !imageUrl ? { error_message: "Falha ao gerar imagem." } : {}),
@@ -87,8 +87,8 @@ export function useGenerateCarousel() {
                 );
                 const style = master.style
                     ? {
-                          color_palette: master.style.color_palette ?? "",
-                          visual_style: master.style.visual_style ?? "",
+                          color_palette: master.style.colorPalette ?? "",
+                          visual_style: master.style.visualStyle ?? "",
                       }
                     : undefined;
                 setPostPreview({
@@ -100,7 +100,7 @@ export function useGenerateCarousel() {
                 });
                 const urls = await generateCarouselImages(
                     master.slides.map(s => ({
-                        image_prompt: s.image_prompt,
+                        image_prompt: s.imagePrompt,
                         text: s.text,
                         role: s.role,
                     })),

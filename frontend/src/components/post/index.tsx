@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useCallback } from "react";
-import { FiDownload, FiHeart, FiRefreshCw } from "react-icons/fi";
+import { FiArrowLeft, FiDownload, FiHeart, FiRefreshCw } from "react-icons/fi";
 import { FaRegComment } from "react-icons/fa";
 
 import { Carousel } from "@/components/common/carousel";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { getTotalPostsGenerated, updateTotalPostsGenerated } from "@/app/actions";
 import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { useGenerateCarousel } from "@/app/hooks/openai";
-import { exportCarouselPost } from "@/utils/api/openai";
+import { exportCarouselPost } from "@/utils/api/openai/export-carousel-post";
 
 export function Post() {
     const { postPreview } = useNarrativeStore();
@@ -73,6 +74,13 @@ export function Post() {
     return (
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
             <div className="container mx-auto max-w-2xl">
+                <Link href="/narrative/edit" className="text-primary mb-8 inline-flex items-center">
+                    <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
+                            <FiArrowLeft size={16} />
+                        </span>
+                    Voltar
+                </Link>
+
                 <div className="mb-4 text-center">
                     <h3 className="text-xl font-bold text-foreground sm:text-2xl">
                         Preview do seu conteúdo no Instagram

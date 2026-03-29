@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { FiFilm, FiImage, FiFileText, FiList } from "react-icons/fi";
+import { useState } from "react";
+import { FiImage, FiFileText, FiList } from "react-icons/fi";
 import { FaQuoteLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
@@ -138,12 +138,6 @@ export default function EditNarrative() {
                 </div>
 
                 <footer className="flex items-center justify-center gap-4">
-                    <Button type="button" variant="primary" disabled>
-                        <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
-                            <FiFilm size={16} />
-                        </span>
-                        Reels
-                    </Button>
                     <Button type="submit" variant="primary" disabled={generating}>
                         <span className="mr-2 inline-flex h-5 w-5 items-center justify-center">
                             <FiImage size={20} />
