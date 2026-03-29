@@ -60,6 +60,10 @@ class TotalPostsGeneratedResponse(BaseModel):
     posts_generated: int | None = None
 
 
+class MonthlyNarrativesRemainingResponse(BaseModel):
+    monthly_narratives_remaining: int = Field(..., ge=0)
+
+
 class UpdateTotalPostsGeneratedRequest(BaseModel):
     year: int = Field(..., ge=2000, le=3000)
     month: int = Field(..., ge=1, le=12)

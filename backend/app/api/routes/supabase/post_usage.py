@@ -3,11 +3,64 @@ from fastapi.responses import JSONResponse
 
 from app.api.deps import get_current_user_id, get_supabase_client
 from app.schemas import (
+    MonthlyNarrativesRemainingResponse,
     TotalPostsGeneratedResponse,
     UpdateTotalPostsGeneratedRequest,
 )
 
 router = APIRouter()
+
+
+@router.get("/monthly-narratives-remaining", response_model=MonthlyNarrativesRemainingResponse)
+def get_monthly_narratives_remaining(
+    year: int = Query(..., ge=2000, le=3000),
+    month: int = Query(..., ge=1, le=12),
+    user_id: str = Depends(get_current_user_id),
+    supabase=Depends(get_supabase_client),
+):
+    """Active plan monthly_narratives allowance minus posts_generated for the given month."""
+    try:
+        subscription = (
+            supabase.table("subscription")
+            .select("plan (monthly_narratives)")
+            .eq("profile_id", user_id)
+            .eq("status", "active")
+            .maybe_single()
+            .execute()
+        )
+
+        allowance = 0
+        if subscription.data:
+            data = (
+                dict(subscription.data)
+                if isinstance(subscription.data, dict)
+                else subscription.data
+            )
+            plan = data.get("plan") or {}
+            if isinstance(plan, list) and plan:
+                plan = plan[0]
+            allowance = int((plan or {}).get("monthly_narratives") or 0)
+
+        usage = (
+            supabase.table("post_usage")
+            .select("posts_generated")
+            .eq("user_id", user_id)
+            .eq("year", year)
+            .eq("month", month)
+            .limit(1)
+            .execute()
+        )
+        rows = usage.data or []
+        used = int((rows[0] or {}).get("posts_generated") or 0)
+        remaining = max(0, allowance - used)
+        return MonthlyNarrativesRemainingResponse(monthly_narratives_remaining=remaining)
+    except Exception as e:
+        print("get_monthly_narratives_remaining error", e)
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to fetch monthly narratives remaining", "detail": str(e)},
+        )
+
 
 @router.get("/posts-generated", response_model=TotalPostsGeneratedResponse)
 def get_total_posts_generated(
