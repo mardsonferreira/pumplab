@@ -1,21 +1,24 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
-import { FiDownload, FiHeart, FiRefreshCw } from "react-icons/fi";
+import { FiArrowLeft, FiDownload, FiHeart, FiRefreshCw } from "react-icons/fi";
 import { FaRegComment } from "react-icons/fa";
 
 import { Carousel } from "@/components/common/carousel";
 import { Button } from "@/components/ui/Button";
-import { getTotalPostsGenerated, updateTotalPostsGenerated } from "@/app/actions";
 import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { useGenerateCarousel } from "@/app/hooks/openai";
-import { exportCarouselPost } from "@/utils/api/openai";
+import { exportCarouselPost } from "@/utils/api/openai/export-carousel-post";
+import { updateTotalPostsGenerated } from "@/utils/api/post-usage/update-total-posts-generated";
 
 export function Post() {
     const { postPreview } = useNarrativeStore();
     const { retryFailedSlides, retrying, error } = useGenerateCarousel();
     const [exportError, setExportError] = useState<string | null>(null);
     const [exporting, setExporting] = useState(false);
+    const router = useRouter();
     const hasFailedSlides =
         postPreview?.slides?.some(s => s.status === "failed") ?? false;
 
@@ -44,15 +47,11 @@ export function Post() {
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth() + 1;
             try {
-                const postsGenerated = await getTotalPostsGenerated(year, month);
-                if (postsGenerated !== undefined) {
-                    await updateTotalPostsGenerated(year, month, postsGenerated + 1);
-                } else {
-                    await updateTotalPostsGenerated(year, month, 1);
-                }
+                await updateTotalPostsGenerated(year, month, 1);
             } catch (err) {
                 console.error(err);
             }
+            router.push("/dashboard");
         } catch (err) {
             const message =
                 err instanceof Error ? err.message : "Falha ao baixar o post.";
@@ -73,6 +72,13 @@ export function Post() {
     return (
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
             <div className="container mx-auto max-w-2xl">
+                <Link href="/narrative/edit" className="text-primary mb-8 inline-flex items-center">
+                    <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
+                            <FiArrowLeft size={16} />
+                        </span>
+                    Voltar
+                </Link>
+
                 <div className="mb-4 text-center">
                     <h3 className="text-xl font-bold text-foreground sm:text-2xl">
                         Preview do seu conteúdo no Instagram

@@ -1,9 +1,9 @@
 export type Narrative = {
     id: string;
     theme: string;
-    central_thesis: string;
-    main_argument: string;
-    narrative_sequence: {
+    centralThesis: string;
+    mainArgument: string;
+    narrativeSequence: {
         step: number;
         title: string;
         description: string;
@@ -12,9 +12,9 @@ export type Narrative = {
 
 /** Editable narrative state after user selects one option; caption required before export. */
 export type NarrativeDraft = {
-    central_thesis: string;
-    main_argument: string;
-    narrative_sequence: { step: number; title: string; description: string }[];
+    centralThesis: string;
+    mainArgument: string;
+    narrativeSequence: { step: number; title: string; description: string }[];
     caption?: string;
 };
 
@@ -42,16 +42,17 @@ export type PostPreview = {
     style?: { color_palette: string; visual_style: string };
 };
 
+/** Shape after `httpUtil` camelCases the API JSON (snake_case in wire format). */
 export type CarouselPromptObject = {
     style: {
-        color_palette: string;
-        visual_style: string;
+        colorPalette: string;
+        visualStyle: string;
     };
     caption: string;
     slides: {
         role: CarouselSlideRole;
         text: string;
-        image_prompt: string;
+        imagePrompt: string;
     }[];
 };
 

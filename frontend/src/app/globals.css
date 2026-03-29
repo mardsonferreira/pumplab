@@ -91,6 +91,13 @@ body {
     bottom: 12px;
 }
 
+/* Keep post carousel dots below content to avoid caption overlap. */
+.slider-container .slick-dots {
+    position: static;
+    bottom: auto;
+    margin-top: 0.75rem;
+}
+
 .slick-dots li {
     width: 6px;
     height: 6px;

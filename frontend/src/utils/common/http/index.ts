@@ -7,4 +7,5 @@ export interface HttpUtil {
     get<T>(path: string, init?: RequestInit): Promise<T>;
     del<T>(path: string, init?: RequestInit): Promise<T>;
     post<T>(path: string, init?: RequestInit): Promise<T>;
+    postBlob(path: string, init?: RequestInit): Promise<Blob>;
 }

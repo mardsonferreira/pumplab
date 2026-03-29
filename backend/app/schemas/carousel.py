@@ -54,3 +54,17 @@ class CarouselExportSlide(BaseModel):
 class CarouselExportRequest(BaseModel):
     caption: str
     slides: list[CarouselExportSlide] = Field(..., min_length=5, max_length=5)
+
+
+class TotalPostsGeneratedResponse(BaseModel):
+    posts_generated: int | None = None
+
+
+class MonthlyNarrativesRemainingResponse(BaseModel):
+    monthly_narratives_remaining: int = Field(..., ge=0)
+
+
+class UpdateTotalPostsGeneratedRequest(BaseModel):
+    year: int = Field(..., ge=2000, le=3000)
+    month: int = Field(..., ge=1, le=12)
+    value: int = Field(..., ge=0)
