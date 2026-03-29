@@ -7,6 +7,8 @@ from app.schemas.carousel import (
     CarouselMasterResponse,
     CarouselMasterSlide,
     CarouselMasterStyle,
+    TotalPostsGeneratedResponse,
+    UpdateTotalPostsGeneratedRequest,
 )
 
 __all__ = [
@@ -18,4 +20,6 @@ __all__ = [
     "CarouselImagesStyleContext",
     "CarouselExportSlide",
     "CarouselExportRequest",
+    "TotalPostsGeneratedResponse",
+    "UpdateTotalPostsGeneratedRequest",
 ]

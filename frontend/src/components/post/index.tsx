@@ -1,22 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
 import { FiArrowLeft, FiDownload, FiHeart, FiRefreshCw } from "react-icons/fi";
 import { FaRegComment } from "react-icons/fa";
 
 import { Carousel } from "@/components/common/carousel";
 import { Button } from "@/components/ui/Button";
-import { getTotalPostsGenerated, updateTotalPostsGenerated } from "@/app/actions";
 import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { useGenerateCarousel } from "@/app/hooks/openai";
 import { exportCarouselPost } from "@/utils/api/openai/export-carousel-post";
+import { updateTotalPostsGenerated } from "@/utils/api/post-usage/update-total-posts-generated";
 
 export function Post() {
     const { postPreview } = useNarrativeStore();
     const { retryFailedSlides, retrying, error } = useGenerateCarousel();
     const [exportError, setExportError] = useState<string | null>(null);
     const [exporting, setExporting] = useState(false);
+    const router = useRouter();
     const hasFailedSlides =
         postPreview?.slides?.some(s => s.status === "failed") ?? false;
 
@@ -45,15 +47,11 @@ export function Post() {
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth() + 1;
             try {
-                const postsGenerated = await getTotalPostsGenerated(year, month);
-                if (postsGenerated !== undefined) {
-                    await updateTotalPostsGenerated(year, month, postsGenerated + 1);
-                } else {
-                    await updateTotalPostsGenerated(year, month, 1);
-                }
+                await updateTotalPostsGenerated(year, month, 1);
             } catch (err) {
                 console.error(err);
             }
+            router.push("/dashboard");
         } catch (err) {
             const message =
                 err instanceof Error ? err.message : "Falha ao baixar o post.";
