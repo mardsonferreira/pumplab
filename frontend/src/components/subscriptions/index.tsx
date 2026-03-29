@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/Button";
 import { SubscriptionResponse } from "@/utils/api/subscriptions/fetch-subscriptions";
 import { httpUtil } from "@/utils/common/http/client";
@@ -14,6 +16,7 @@ import { useSubscriptions } from "./hooks";
 export function Subscriptions({ subscription }: { subscription: SubscriptionResponse }) {
     const { loading, handleCancelSubscription } = useSubscriptions(httpUtil);
     const freePlan = subscription.plan.name === "Free";
+    const router = useRouter();
 
     const onCancelSubscription = async () => {
         await handleCancelSubscription(subscription.id);
@@ -27,7 +30,7 @@ export function Subscriptions({ subscription }: { subscription: SubscriptionResp
                     <span className="text-slate-400 text-sm">Gerencie sua assinatura atual, recursos e detalhes de pagamento</span>
                 </div>
                 <div className="w-full md:w-auto">
-                    <Button className="w-full md:w-auto">Alterar plano</Button>
+                    <Button className="w-full md:w-auto" onClick={() => router.push("/pricing")}>Alterar plano</Button>
                 </div>
             </header>
 

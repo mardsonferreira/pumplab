@@ -7,6 +7,9 @@ import { User } from "@supabase/supabase-js";
 import { Plan } from "@/types";
 import { apiFetch, BackendUnavailableError } from "@/lib/api/client";
 import { useGoogleLogin } from "@/app/hooks/google-login";
+import { deleteSubscription } from "@/utils/api/subscriptions/delete-subscription";
+import { httpUtil } from "@/utils/common/http/client";
+import { createCheckoutSession } from "@/utils/api/stripe/create-checkout-session";
 
 type ActiveSubscription = {
     id: string;
@@ -97,34 +100,16 @@ export function useSubscriptionConfirm(user: User | null, plans: Plan[]) {
             setError(null);
 
             if (activeSubscription?.id) {
-                const cancelRes = await apiFetch(`/subscriptions/${activeSubscription.id}`, {
-                    method: "DELETE",
-                });
-                if (!cancelRes.ok) {
-                    const body = await cancelRes.json().catch(() => ({}));
-                    throw new Error(body.detail ?? body.message ?? "Erro ao cancelar assinatura atual.");
-                }
+                await deleteSubscription(httpUtil, activeSubscription.id);
             }
 
-            const res = await apiFetch("/stripe/create-checkout-session", {
-                method: "POST",
-                body: JSON.stringify({ planId: selectedPlan.id }),
-            });
-            const data = await res.json().catch(() => ({}));
-
-            if (!res.ok) {
-                if (res.status === 401) {
-                    handleGoogleLogin(`/pricing?planId=${encodeURIComponent(selectedPlan.id)}`);
-                    return;
-                }
-                throw new Error(data.error ?? "Erro ao criar sessão de checkout.");
+            if (!user) {
+                handleGoogleLogin(`/pricing?planId=${encodeURIComponent(selectedPlan.id)}`);
+                return;
             }
 
-            if (data?.url) {
-                window.location.href = data.url;
-            } else {
-                throw new Error("Resposta inválida do servidor.");
-            }
+            const { url } = await createCheckoutSession({ planId: selectedPlan.id });
+            window.location.href = url;
         } catch (err) {
             const message =
                 err instanceof BackendUnavailableError

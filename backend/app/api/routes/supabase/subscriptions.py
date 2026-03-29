@@ -14,7 +14,9 @@ async def get_subscription(profile_id: str):
 
     profile = supabase.table("profile").select("id").eq("id", profile_id).execute()
     if not profile.data:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        return {
+            "id": None,
+        }
 
     subscription = (
         supabase.table("subscription")

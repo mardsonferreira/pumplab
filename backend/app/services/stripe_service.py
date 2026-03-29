@@ -30,8 +30,8 @@ def create_checkout_session(
         .execute()
     )
     plan = plan_row.data if hasattr(plan_row, "data") else None
-    if not plan or not (plan.get("stripe_price_id") if isinstance(plan, dict) else getattr(plan, "stripe_price_id", None)):
-        raise ValueError("Plan not found or not available for subscription")
+    if not plan:
+        raise ValueError("Plan not found")
 
     stripe_price_id = plan["stripe_price_id"] if isinstance(plan, dict) else plan.stripe_price_id
 
@@ -66,6 +66,21 @@ def create_checkout_session(
         )
         customer_id = customer.id
         supabase.table("profile").update({"stripe_customer_id": customer_id}).eq("id", user_id).execute()
+
+    if not stripe_price_id:
+        # Free plans do not have a Stripe price. Create the active subscription directly.
+        payload = {
+            "profile_id": profile_id_val,
+            "plan_id": plan_id,
+            "stripe_subscription_id": None,
+            "status": "active",
+            "started_at": datetime.utcnow().isoformat() + "Z",
+        }
+        created = supabase.table("subscription").insert(payload).execute()
+        created_data = created.data if hasattr(created, "data") else None
+        if not created_data:
+            raise ValueError("Failed to create free subscription")
+        return success_url
 
     session = st.checkout.Session.create(
         mode="subscription",
