@@ -5,7 +5,6 @@ import { CreateCheckoutSessionPayload, CreateCheckoutSessionResponse } from "./t
 export async function createCheckoutSession(
     payload: CreateCheckoutSessionPayload,
 ): Promise<CreateCheckoutSessionResponse> {
-    console.log("createCheckoutSession", payload);
     const data = await httpUtil.post<CreateCheckoutSessionResponse>("/stripe/create-checkout-session", {
         body: payload,
     });

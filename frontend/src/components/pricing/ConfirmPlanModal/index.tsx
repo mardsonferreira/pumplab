@@ -70,9 +70,9 @@ export function ConfirmPlanModal({
                             )}
                         </section>
 
-                        {isChangingPlan && (
+                        {isChangingPlan && activeSubscriptionPlanName &&(
                             <p className="mb-4 rounded-lg border border-amber-800/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-300">
-                                Sua assinatura atual ({activeSubscriptionPlanName}) será cancelada ao confirmar.
+                                Você já possui um plano ativo ({activeSubscriptionPlanName}). Ao confirmar, seu plano atual será cancelado e um novo será criado.
                             </p>
                         )}
 
