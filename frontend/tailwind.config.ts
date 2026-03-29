@@ -22,6 +22,26 @@ const config: Config = {
                 confirm: "var(--confirm)",
                 error: "var(--error)",
                 warning: "var(--warning)",
+                slate: {
+                    100: "var(--slate-100)",
+                    400: "var(--slate-400)",
+                    500: "var(--slate-500)",
+                    800: "var(--slate-800)",
+                    900: "var(--slate-900)",
+                },
+                neutral: {
+                    900: "var(--neutral-900)",
+                },
+                yellow: {
+                    400: "var(--yellow-400)",
+                },
+                red: {
+                    500: "var(--red-500)",
+                },
+                green: {
+                    900: "var(--green-900)",
+                    500: "var(--green-500)",
+                },
             },
         },
     },

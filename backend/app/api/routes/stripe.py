@@ -1,7 +1,7 @@
 import stripe
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import AliasChoices, BaseModel, Field
 
 from app.api.deps import get_supabase_client, get_current_user
 from app.core.config import get_settings
@@ -11,7 +11,9 @@ router = APIRouter()
 
 
 class CreateCheckoutBody(BaseModel):
-    planId: str
+    """Accept camelCase (direct clients) or snake_case (http util serializes keys)."""
+
+    plan_id: str = Field(validation_alias=AliasChoices("planId", "plan_id"))
 
 
 @router.post("/create-checkout-session")
@@ -29,7 +31,7 @@ def create_checkout_session(
             user_id=user["id"],
             user_email=user.get("email"),
             user_display_name=user.get("display_name"),
-            plan_id=body.planId,
+            plan_id=body.plan_id,
             success_url=success_url,
             cancel_url=cancel_url,
         )
@@ -40,10 +42,13 @@ def create_checkout_session(
             return JSONResponse(status_code=400, content={"error": msg})
         if "Failed to create profile" in msg:
             return JSONResponse(status_code=500, content={"error": msg})
+        if "Failed to create free subscription" in msg:
+            return JSONResponse(status_code=500, content={"error": msg})
         if "Failed to create checkout" in msg:
             return JSONResponse(status_code=500, content={"error": msg})
         return JSONResponse(status_code=400, content={"error": msg})
     except Exception as e:
+        print(e)
         return JSONResponse(
             status_code=500,
             content={"error": str(e) if str(e) else "Internal server error"},
@@ -75,9 +80,9 @@ async def stripe_webhook(request: Request):
         stripe_service.handle_checkout_session_completed(event.data.object, supabase)
     except ValueError as e:
         return JSONResponse(status_code=400, content={"message": str(e)})
-    except Exception:
+    except Exception as e:
         return JSONResponse(
             status_code=500,
-            content={"message": "Internal server error"},
+            content={"message": "Internal server error", "detail": str(e)},
         )
     return JSONResponse(content={"received": True})

@@ -72,7 +72,7 @@ export default function Dashboard() {
                         placeholder="Digite um tema para as suas narrativas..."
                         className={cn(
                             "w-full rounded-lg border border-neutral-800 px-4 py-3 pr-12",
-                            "bg-neutral-900/50 text-foreground placeholder:text-neutral-500",
+                            "bg-slate-900 text-foreground placeholder:text-neutral-500",
                             "focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary",
                             "max-h-[200px] min-h-[120px] resize-none",
                         )}

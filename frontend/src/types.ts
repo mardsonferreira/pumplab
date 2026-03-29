@@ -70,6 +70,15 @@ export type SubscriptionWithPlan = {
     };
   };
 
+  // TODO: update the snake case to camel case
+
+/** From Stripe: next billing date, card brand (e.g. visa), last 4 digits. */
+export type SubscriptionPaymentInfo = {
+  nextChargeAt: string | null;
+  cardBrand: string | null;
+  cardLast4: string | null;
+};
+
 export type Plan = {
     id: string;
     name: string;
@@ -80,3 +89,24 @@ export type Plan = {
     stripe_product_id: string | null;
     stripe_price_id: string | null;
 };
+
+export interface Subscription {
+    id: string;
+    status: string;
+    startedAt: string;
+    endsAt: null;
+    stripeSubscriptionId: string;
+    nextChargeAt?: string | null;
+    cardBrand?: string | null;
+    cardLast4?: string | null;
+    plan: {
+        id: string;
+        name: string;
+        price: number;
+        billingCycle: string | null;
+        monthlyNarratives: number;
+        description: string | null;
+        stripeProductId: string | null;
+        stripePriceId: string | null;
+    };
+}

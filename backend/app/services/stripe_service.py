@@ -30,8 +30,8 @@ def create_checkout_session(
         .execute()
     )
     plan = plan_row.data if hasattr(plan_row, "data") else None
-    if not plan or not (plan.get("stripe_price_id") if isinstance(plan, dict) else getattr(plan, "stripe_price_id", None)):
-        raise ValueError("Plan not found or not available for subscription")
+    if not plan:
+        raise ValueError("Plan not found")
 
     stripe_price_id = plan["stripe_price_id"] if isinstance(plan, dict) else plan.stripe_price_id
 
@@ -66,6 +66,21 @@ def create_checkout_session(
         )
         customer_id = customer.id
         supabase.table("profile").update({"stripe_customer_id": customer_id}).eq("id", user_id).execute()
+
+    if not stripe_price_id:
+        # Free plans do not have a Stripe price. Create the active subscription directly.
+        payload = {
+            "profile_id": profile_id_val,
+            "plan_id": plan_id,
+            "stripe_subscription_id": None,
+            "status": "active",
+            "started_at": datetime.utcnow().isoformat() + "Z",
+        }
+        created = supabase.table("subscription").insert(payload).execute()
+        created_data = created.data if hasattr(created, "data") else None
+        if not created_data:
+            raise ValueError("Failed to create free subscription")
+        return success_url
 
     session = st.checkout.Session.create(
         mode="subscription",
@@ -154,3 +169,51 @@ def handle_checkout_session_completed(session: stripe.checkout.Session, supabase
         "started_at": datetime.utcnow().isoformat() + "Z",
     }
     supabase.table("subscription").upsert(payload, on_conflict="stripe_subscription_id").execute()
+
+
+def get_subscription_payment_info(stripe_subscription_id: str) -> dict | None:
+    if not stripe_subscription_id:
+        return None
+    st = get_stripe()
+    try:
+        sub = st.Subscription.retrieve(
+            stripe_subscription_id,
+            expand=["default_payment_method"],
+        )
+    except stripe.error.InvalidRequestError:
+        return None
+    if not sub:
+        return None
+    result = {
+        "next_charge_at": None,
+        "card_brand": None,
+        "card_last4": None,
+    }
+    current_period_end = sub.get("items").get("data")[0].get("current_period_end")
+    if current_period_end:
+        result["next_charge_at"] = datetime.utcfromtimestamp(current_period_end).isoformat() + "Z"
+    pm = sub.default_payment_method
+    if pm is None:
+        return result
+    if isinstance(pm, str):
+        try:
+            pm = st.PaymentMethod.retrieve(pm)
+        except stripe.error.InvalidRequestError:
+            return result
+    if hasattr(pm, "card") and pm.card:
+        exp_month = getattr(pm.card, "exp_month", None) or (pm.card.get("exp_month") if isinstance(pm.card, dict) else None)
+        exp_year = getattr(pm.card, "exp_year", None) or (pm.card.get("exp_year") if isinstance(pm.card, dict) else None)
+        result["card_brand"] = getattr(pm.card, "brand", None) or (pm.card.get("brand") if isinstance(pm.card, dict) else None)
+        result["card_last4"] = getattr(pm.card, "last4", None) or (pm.card.get("last4") if isinstance(pm.card, dict) else None)
+        result["card_expires_at"] = f"{exp_month}/{exp_year}"
+    return result
+
+def cancel_subscription(stripe_subscription_id: str) -> None:
+    if not stripe_subscription_id:
+        raise ValueError("Missing stripe subscription id")
+    st = get_stripe()
+    try:
+        st.Subscription.delete(stripe_subscription_id)
+    except stripe.error.InvalidRequestError as e:
+        message = getattr(e, "user_message", None) or str(e)
+        raise ValueError(f"Stripe subscription cancellation failed: {message}")
