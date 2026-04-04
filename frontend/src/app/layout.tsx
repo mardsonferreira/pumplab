@@ -5,6 +5,7 @@ import { fontSans } from "@/lib/fonts";
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { HotToaster } from "@/components/common/hottoaster";
 import { getMonthlyNarrativesRemaining } from "@/utils/api/post-usage/get-monthly-narratives-remaining";
 import { httpUtil } from "@/utils/common/http/server";
 import "./globals.css";
@@ -42,6 +43,7 @@ export default async function RootLayout({
     return (
         <html lang="en" className={fontSans.variable}>
             <body className="flex min-h-screen flex-col">
+                <HotToaster />
                 <Header user={user} monthlyNarrativesRemaining={monthlyNarrativesRemaining} />
                 <main className="flex-1">{children}</main>
                 <Footer />

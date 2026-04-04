@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/Button";
 import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { useGenerateCarousel } from "@/app/hooks/openai";
 import { exportCarouselPost } from "@/utils/api/openai/export-carousel-post";
-import { updateTotalPostsGenerated } from "@/utils/api/post-usage/update-total-posts-generated";
 
 export function Post() {
     const { postPreview } = useNarrativeStore();
@@ -43,14 +42,6 @@ export function Post() {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            const currentDate = new Date();
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth() + 1;
-            try {
-                await updateTotalPostsGenerated(year, month, 1);
-            } catch (err) {
-                console.error(err);
-            }
             router.push("/dashboard");
         } catch (err) {
             const message =

@@ -123,9 +123,9 @@ export function buildCarouselPromptFromDraft(draft: NarrativeDraft): string {
         ...(typeof draftWithTheme.theme === "string"
             ? { theme: draftWithTheme.theme }
             : {}),
-        central_thesis: draft.central_thesis,
-        main_argument: draft.main_argument,
-        narrative_sequence: draft.narrative_sequence,
+        central_thesis: draft.centralThesis,
+        main_argument: draft.mainArgument,
+        narrative_sequence: draft.narrativeSequence,
     });
 }
 

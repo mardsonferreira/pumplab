@@ -51,7 +51,8 @@ def get_monthly_narratives_remaining(
             .execute()
         )
         rows = usage.data or []
-        used = int((rows[0] or {}).get("posts_generated") or 0)
+        first = rows[0] if rows else {}
+        used = int((first or {}).get("posts_generated") or 0)
         remaining = max(0, allowance - used)
         return MonthlyNarrativesRemainingResponse(monthly_narratives_remaining=remaining)
     except Exception as e:
