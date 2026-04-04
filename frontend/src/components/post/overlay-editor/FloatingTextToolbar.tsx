@@ -42,16 +42,16 @@ export function FloatingTextToolbar({ selected, onUpdateText, onDelete }: Floati
                 position: "absolute",
                 top,
                 left: Math.max(0, selected.x),
-                zIndex: 100,
+                zIndex: 1000,
                 minWidth: 220,
                 maxWidth: "calc(100% - 4px)",
             }}
             onPointerDown={e => e.stopPropagation()}
             onClick={e => e.stopPropagation()}
         >
-            <div className="rounded-md border border-foreground/20 bg-background shadow-md">
-                <div className="flex items-center gap-1 px-2 py-1.5">
-                    <label className="flex items-center gap-1 text-xs text-muted-foreground" title="Tamanho da fonte">
+            <div className="rounded-lg border border-zinc-500 bg-zinc-950 text-zinc-50 shadow-2xl ring-2 ring-black/40">
+                <div className="flex items-center gap-1.5 px-2.5 py-2">
+                    <label className="flex items-center gap-1.5 text-xs text-zinc-200" title="Tamanho da fonte">
                         <span className="font-semibold select-none">Aa</span>
                         <input
                             type="number"
@@ -59,7 +59,7 @@ export function FloatingTextToolbar({ selected, onUpdateText, onDelete }: Floati
                             onChange={handleFontSizeChange}
                             min={MIN_FONT_SIZE}
                             max={MAX_FONT_SIZE}
-                            className="w-12 rounded border border-foreground/10 bg-background px-1 py-0.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="w-12 rounded-md border border-zinc-400 bg-white px-1.5 py-0.5 text-xs font-medium text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-zinc-950"
                         />
                     </label>
 
@@ -68,19 +68,19 @@ export function FloatingTextToolbar({ selected, onUpdateText, onDelete }: Floati
                             type="color"
                             value={selected.color}
                             onChange={handleColorChange}
-                            className="h-5 w-5 cursor-pointer rounded border-none"
+                            className="h-6 w-6 cursor-pointer rounded-md border-2 border-zinc-400 bg-white p-0 shadow-sm"
                         />
                     </label>
 
-                    <div className="mx-1 h-4 w-px bg-foreground/20" />
+                    <div className="mx-0.5 h-5 w-px shrink-0 bg-zinc-500" />
 
                     <button
                         type="button"
                         title="Remover texto"
-                        className="rounded p-1 text-destructive hover:bg-destructive/10"
+                        className="rounded-md p-1.5 text-red-400 transition-colors hover:bg-red-950 hover:text-red-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                         onClick={() => onDelete(selected.id)}
                     >
-                        <FiTrash2 size={12} />
+                        <FiTrash2 size={14} />
                     </button>
                 </div>
             </div>
