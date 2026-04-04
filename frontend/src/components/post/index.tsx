@@ -76,6 +76,26 @@ export function Post() {
         [dispatchOverlay],
     );
 
+    const handleResize = useCallback(
+        (id: string, x: number, y: number, width: number, height: number) => {
+            const el = activeSlideEdit?.overlays.find(o => o.id === id);
+            if (!el) return;
+            const { overflow } = computeTextFit(el.text, el.fontSize, width, height, el.lineHeight);
+            dispatchOverlay({
+                type: "RESIZE",
+                id,
+                x,
+                y,
+                width,
+                height,
+                overflow,
+                containerW: SLIDE_WIDTH,
+                containerH: SLIDE_HEIGHT,
+            });
+        },
+        [dispatchOverlay, activeSlideEdit],
+    );
+
     const handleAddText = useCallback(() => {
         if (!activeSlideEdit) return;
         const maxZ = activeSlideEdit.overlays.reduce((m, o) => Math.max(m, o.zIndex), 0);
@@ -193,6 +213,7 @@ export function Post() {
                         onSelect={handleSelectOverlay}
                         onMove={handleMove}
                         onUpdateText={handleUpdateText}
+                        onResize={handleResize}
                     />
                     {isActiveSlide && selectedText && (
                         <FloatingTextToolbar
@@ -204,7 +225,7 @@ export function Post() {
                 </div>
             );
         },
-        [session, handleSelectOverlay, handleMove, selectedText, handleUpdateText, handleDeleteOverlay],
+        [session, handleSelectOverlay, handleMove, handleResize, selectedText, handleUpdateText, handleDeleteOverlay],
     );
 
     return (

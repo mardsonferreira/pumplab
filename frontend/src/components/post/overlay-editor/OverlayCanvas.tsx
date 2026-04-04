@@ -2,8 +2,9 @@
 
 import React, { useRef, useCallback, useMemo } from "react";
 import type { TextOverlay, CarouselSlideEditState } from "@/types";
-import { SLIDE_WIDTH, SLIDE_HEIGHT } from "./constants";
 import { useOverlayDrag } from "./use-overlay-drag";
+import { useOverlayResize } from "./use-overlay-resize";
+import type { ResizeHandleId } from "./resize-geometry";
 
 // ---------------------------------------------------------------------------
 // Single overlay element renderer
@@ -19,6 +20,7 @@ interface OverlayItemProps {
     onSelect: (id: string) => void;
     onMove: (id: string, x: number, y: number) => void;
     onUpdateText?: (id: string, patch: TextUpdatePatch) => void;
+    onResize?: (id: string, x: number, y: number, width: number, height: number) => void;
 }
 
 function TextOverlayItem({ el, scale }: { el: TextOverlay; scale: number }) {
@@ -43,8 +45,134 @@ function TextOverlayItem({ el, scale }: { el: TextOverlay; scale: number }) {
 }
 
 const DRAG_RAIL_PX = 6;
+/** Hit target along edges; corners sit above edges in stacking order. */
+const EDGE_HIT_PX = 8;
+const CORNER_HIT_PX = 11;
+const EDGE_INSET = 14;
 
-function DraggableOverlay({ element, selected, containerRef, scale, onSelect, onMove, onUpdateText }: OverlayItemProps) {
+function OverlayResizeHandles({
+    onHandlePointerDown,
+}: {
+    onHandlePointerDown: (e: React.PointerEvent, handle: ResizeHandleId) => void;
+}) {
+    // Invisible hit targets only; outline + cursor communicate selection and resize affordance.
+    const edge = "pointer-events-auto touch-none absolute z-[30] bg-transparent";
+    const corner = `${edge} z-[31]`;
+
+    return (
+        <div className="pointer-events-none absolute inset-0" aria-hidden>
+            <div
+                className={`${edge} cursor-ns-resize`}
+                style={{
+                    left: "28%",
+                    right: "28%",
+                    top: 0,
+                    height: EDGE_HIT_PX,
+                    transform: "translateY(-50%)",
+                }}
+                onPointerDown={e => onHandlePointerDown(e, "n")}
+            />
+            <div
+                className={`${edge} cursor-ns-resize`}
+                style={{
+                    left: "28%",
+                    right: "28%",
+                    bottom: 0,
+                    height: EDGE_HIT_PX,
+                    transform: "translateY(50%)",
+                }}
+                onPointerDown={e => onHandlePointerDown(e, "s")}
+            />
+            <div
+                className={`${edge} cursor-ew-resize`}
+                style={{
+                    top: EDGE_INSET,
+                    bottom: EDGE_INSET,
+                    left: 0,
+                    width: EDGE_HIT_PX,
+                    transform: "translateX(-50%)",
+                }}
+                onPointerDown={e => onHandlePointerDown(e, "w")}
+            />
+            <div
+                className={`${edge} cursor-ew-resize`}
+                style={{
+                    top: EDGE_INSET,
+                    bottom: EDGE_INSET,
+                    right: 0,
+                    width: EDGE_HIT_PX,
+                    transform: "translateX(50%)",
+                }}
+                onPointerDown={e => onHandlePointerDown(e, "e")}
+            />
+            <div
+                className={`${corner} cursor-nwse-resize`}
+                style={{
+                    left: 0,
+                    top: 0,
+                    width: CORNER_HIT_PX,
+                    height: CORNER_HIT_PX,
+                    transform: "translate(-50%, -50%)",
+                }}
+                onPointerDown={e => onHandlePointerDown(e, "nw")}
+            />
+            <div
+                className={`${corner} cursor-nesw-resize`}
+                style={{
+                    right: 0,
+                    top: 0,
+                    width: CORNER_HIT_PX,
+                    height: CORNER_HIT_PX,
+                    transform: "translate(50%, -50%)",
+                }}
+                onPointerDown={e => onHandlePointerDown(e, "ne")}
+            />
+            <div
+                className={`${corner} cursor-nesw-resize`}
+                style={{
+                    left: 0,
+                    bottom: 0,
+                    width: CORNER_HIT_PX,
+                    height: CORNER_HIT_PX,
+                    transform: "translate(-50%, 50%)",
+                }}
+                onPointerDown={e => onHandlePointerDown(e, "sw")}
+            />
+            <div
+                className={`${corner} cursor-nwse-resize`}
+                style={{
+                    right: 0,
+                    bottom: 0,
+                    width: CORNER_HIT_PX,
+                    height: CORNER_HIT_PX,
+                    transform: "translate(50%, 50%)",
+                }}
+                onPointerDown={e => onHandlePointerDown(e, "se")}
+            />
+        </div>
+    );
+}
+
+function DraggableOverlay({
+    element,
+    selected,
+    containerRef,
+    scale,
+    onSelect,
+    onMove,
+    onUpdateText,
+    onResize,
+}: OverlayItemProps) {
+    const rectScaled = useMemo(
+        () => ({
+            x: element.x * scale,
+            y: element.y * scale,
+            width: element.width * scale,
+            height: element.height * scale,
+        }),
+        [element.x, element.y, element.width, element.height, scale],
+    );
+
     const { handlePointerDown } = useOverlayDrag({
         onMove: (x, y) => onMove(element.id, x / scale, y / scale),
         containerRef,
@@ -52,7 +180,21 @@ function DraggableOverlay({ element, selected, containerRef, scale, onSelect, on
         elementHeight: element.height * scale,
     });
 
+    const onResizeLogical = useCallback(
+        (x: number, y: number, width: number, height: number) => {
+            onResize?.(element.id, x, y, width, height);
+        },
+        [element.id, onResize],
+    );
+
+    const { handleResizePointerDown } = useOverlayResize({
+        onResize: onResizeLogical,
+        containerRef,
+        scale,
+    });
+
     const inlineTextEdit = Boolean(selected && onUpdateText);
+    const showResizeHandles = Boolean(selected && onResize);
 
     const startDrag = useCallback(
         (e: React.PointerEvent, currentX: number, currentY: number) => {
@@ -86,6 +228,14 @@ function DraggableOverlay({ element, selected, containerRef, scale, onSelect, on
                 }
             }}
         >
+            {showResizeHandles && (
+                <OverlayResizeHandles
+                    onHandlePointerDown={(e, handle) => {
+                        onSelect(element.id);
+                        handleResizePointerDown(e, handle, rectScaled);
+                    }}
+                />
+            )}
             {inlineTextEdit && onUpdateText && (
                 <>
                     <div
@@ -128,9 +278,10 @@ interface OverlayCanvasProps {
     onSelect: (id: string | null) => void;
     onMove: (id: string, x: number, y: number) => void;
     onUpdateText?: (id: string, patch: TextUpdatePatch) => void;
+    onResize?: (id: string, x: number, y: number, width: number, height: number) => void;
 }
 
-export function OverlayCanvas({ slide, onSelect, onMove, onUpdateText }: OverlayCanvasProps) {
+export function OverlayCanvas({ slide, onSelect, onMove, onUpdateText, onResize }: OverlayCanvasProps) {
     const containerRef = useRef<HTMLDivElement>(null);
 
     const scale = useMemo(() => {
@@ -175,6 +326,7 @@ export function OverlayCanvas({ slide, onSelect, onMove, onUpdateText }: Overlay
                             onSelect={id => onSelect(id)}
                             onMove={onMove}
                             onUpdateText={onUpdateText}
+                            onResize={onResize}
                         />
                     ))}
                 </div>
@@ -211,6 +363,7 @@ export function OverlayCanvas({ slide, onSelect, onMove, onUpdateText }: Overlay
                     onSelect={id => onSelect(id)}
                     onMove={onMove}
                     onUpdateText={onUpdateText}
+                    onResize={onResize}
                 />
             ))}
         </div>
