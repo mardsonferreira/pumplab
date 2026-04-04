@@ -85,7 +85,7 @@ export function Carousel({ slides, onSlideChange, renderSlide }: CarouselProps) 
         slidesToShow: 1,
         slidesToScroll: 1,
         waitForAnimate: false,
-        autoplay: !onSlideChange && !!slides?.length,
+        autoplay: false,//!onSlideChange && !!slides?.length,
         autoplaySpeed: 3000,
         pauseOnHover: true,
         arrows: true,

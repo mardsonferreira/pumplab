@@ -6,7 +6,7 @@
  * This editor intentionally exposes ONLY:
  * - Text: content, position (drag), font size, color
  * - Shape: type (rect/rounded/circle), color, fill toggle, opacity
- * - Layer order: bring forward / send backward
+ * - Layer order: bring forward / send backward (LayerControls panel only; carousel floating toolbar has no z-order)
  * - Delete any element
  *
  * Rotation, blur/effects, font families, gradients, and other advanced
@@ -75,16 +75,17 @@ export function OverlayEditor({ slide, onOverlaysChange, onSelect }: OverlayEdit
 
     const handleUpdateText = useCallback(
         (id: string, patch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color">>) => {
-            dispatch({ type: "UPDATE_TEXT", id, patch });
+            let fullPatch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color" | "overflow">> = { ...patch };
             if (patch.text !== undefined || patch.fontSize !== undefined) {
                 const el = slide.overlays.find(o => o.id === id);
                 if (el && isTextOverlay(el)) {
                     const text = patch.text ?? el.text;
                     const fontSize = patch.fontSize ?? el.fontSize;
                     const { overflow } = computeTextFit(text, fontSize, el.width, el.height, el.lineHeight);
-                    dispatch({ type: "UPDATE_TEXT", id, patch: { overflow } });
+                    fullPatch = { ...fullPatch, overflow };
                 }
             }
+            dispatch({ type: "UPDATE_TEXT", id, patch: fullPatch });
         },
         [dispatch, slide.overlays],
     );
@@ -109,6 +110,7 @@ export function OverlayEditor({ slide, onOverlaysChange, onSelect }: OverlayEdit
                 slide={slide}
                 onSelect={onSelect}
                 onMove={handleMove}
+                onUpdateText={handleUpdateText}
             />
             <OverlayFeedback overlays={slide.overlays} selected={selectedElement} />
             <TextControls

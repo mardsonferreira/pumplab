@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
-import { FiArrowLeft, FiDownload, FiHeart, FiRefreshCw } from "react-icons/fi";
+import { FiArrowLeft, FiDownload, FiHeart, FiRefreshCw, FiPlus } from "react-icons/fi";
 import { FaRegComment } from "react-icons/fa";
 
 import { Carousel } from "@/components/common/carousel";
@@ -13,16 +13,13 @@ import { useGenerateCarousel } from "@/app/hooks/openai";
 import { exportCarouselPost } from "@/utils/api/openai/export-carousel-post";
 import { updateTotalPostsGenerated } from "@/utils/api/post-usage/update-total-posts-generated";
 import { OverlayCanvas } from "./overlay-editor/OverlayCanvas";
+import { FloatingTextToolbar } from "./overlay-editor/FloatingTextToolbar";
 import { flattenSlide } from "./overlay-editor/export/flatten-slide";
-import { TextControls } from "./overlay-editor/TextControls";
-import { ShapeControls } from "./overlay-editor/ShapeControls";
-import { LayerControls } from "./overlay-editor/LayerControls";
-import { OverlayFeedback } from "./overlay-editor/OverlayFeedback";
 import { overlayReducer } from "./overlay-editor/state";
-import { createTextOverlay, createShapeOverlay } from "./overlay-editor/factories";
+import { createTextOverlay } from "./overlay-editor/factories";
 import { computeTextFit } from "./overlay-editor/text-fit";
-import { isTextOverlay, isShapeOverlay, canAddOverlay, SLIDE_WIDTH, SLIDE_HEIGHT } from "./overlay-editor/constants";
-import type { CarouselSlide as CarouselSlideType, OverlayElement, TextOverlay, ShapeOverlay, ShapeType } from "@/types";
+import { isTextOverlay, canAddOverlay, SLIDE_WIDTH, SLIDE_HEIGHT } from "./overlay-editor/constants";
+import type { CarouselSlide as CarouselSlideType, TextOverlay } from "@/types";
 
 export function Post() {
     const {
@@ -48,8 +45,6 @@ export function Post() {
         : null;
     const selectedText: TextOverlay | null =
         selectedElement && isTextOverlay(selectedElement) ? selectedElement : null;
-    const selectedShape: ShapeOverlay | null =
-        selectedElement && isShapeOverlay(selectedElement) ? selectedElement : null;
 
     // --- Overlay actions ---
 
@@ -100,47 +95,19 @@ export function Post() {
 
     const handleUpdateText = useCallback(
         (id: string, patch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color">>) => {
-            dispatchOverlay({ type: "UPDATE_TEXT", id, patch });
-
+            let fullPatch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color" | "overflow">> = { ...patch };
             if (patch.text !== undefined || patch.fontSize !== undefined) {
                 const el = activeSlideEdit?.overlays.find(o => o.id === id);
                 if (el && isTextOverlay(el)) {
                     const text = patch.text ?? el.text;
                     const fontSize = patch.fontSize ?? el.fontSize;
                     const { overflow } = computeTextFit(text, fontSize, el.width, el.height, el.lineHeight);
-                    dispatchOverlay({ type: "UPDATE_TEXT", id, patch: { overflow } });
+                    fullPatch = { ...fullPatch, overflow };
                 }
             }
+            dispatchOverlay({ type: "UPDATE_TEXT", id, patch: fullPatch });
         },
         [dispatchOverlay, activeSlideEdit],
-    );
-
-    const handleAddShape = useCallback(
-        (shapeType: ShapeType) => {
-            if (!activeSlideEdit) return;
-            const minZ = activeSlideEdit.overlays.reduce((m, o) => Math.min(m, o.zIndex), 0);
-            const overlay = createShapeOverlay(shapeType, minZ);
-            dispatchOverlay({ type: "ADD_OVERLAY", overlay });
-            if (session) setSelectedOverlay(session.activeSlideIndex, overlay.id);
-        },
-        [activeSlideEdit, dispatchOverlay, session, setSelectedOverlay],
-    );
-
-    const handleUpdateShape = useCallback(
-        (id: string, patch: Partial<Pick<ShapeOverlay, "shapeType" | "color" | "filled" | "opacity">>) => {
-            dispatchOverlay({ type: "UPDATE_SHAPE", id, patch });
-        },
-        [dispatchOverlay],
-    );
-
-    const handleBringForward = useCallback(
-        (id: string) => dispatchOverlay({ type: "BRING_FORWARD", id }),
-        [dispatchOverlay],
-    );
-
-    const handleSendBackward = useCallback(
-        (id: string) => dispatchOverlay({ type: "SEND_BACKWARD", id }),
-        [dispatchOverlay],
     );
 
     // --- Export ---
@@ -210,20 +177,35 @@ export function Post() {
     const slides = postPreview?.slides ?? undefined;
     const readyToDownload = postPreview?.ready_to_download ?? false;
 
-    /** Renders only the visual canvas of the active slide inside the carousel. */
+    /**
+     * Renders the overlay canvas for each slide inside the carousel.
+     * The floating toolbar is a sibling of the canvas (not inside overflow-hidden),
+     * so it can render outside the canvas bounds without being clipped.
+     */
     const renderSlide = useCallback(
         (slide: CarouselSlideType, _idx: number) => {
             const slideEdit = session?.slides[slide.index];
             if (!slideEdit) return null;
+            const isActiveSlide = session?.activeSlideIndex === slide.index;
             return (
-                <OverlayCanvas
-                    slide={slideEdit}
-                    onSelect={handleSelectOverlay}
-                    onMove={handleMove}
-                />
+                <div className="relative w-full">
+                    <OverlayCanvas
+                        slide={slideEdit}
+                        onSelect={handleSelectOverlay}
+                        onMove={handleMove}
+                        onUpdateText={handleUpdateText}
+                    />
+                    {isActiveSlide && selectedText && (
+                        <FloatingTextToolbar
+                            selected={selectedText}
+                            onUpdateText={handleUpdateText}
+                            onDelete={handleDeleteOverlay}
+                        />
+                    )}
+                </div>
             );
         },
-        [session, handleSelectOverlay, handleMove],
+        [session, handleSelectOverlay, handleMove, selectedText, handleUpdateText, handleDeleteOverlay],
     );
 
     return (
@@ -231,8 +213,8 @@ export function Post() {
             <div className="container mx-auto max-w-2xl">
                 <Link href="/narrative/edit" className="text-primary mb-8 inline-flex items-center">
                     <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
-                            <FiArrowLeft size={16} />
-                        </span>
+                        <FiArrowLeft size={16} />
+                    </span>
                     Voltar
                 </Link>
 
@@ -255,29 +237,23 @@ export function Post() {
                         )}
                     </div>
 
-                    {/* Overlay controls below carousel */}
+                    {/* Add text button — bottom-left, just below the carousel */}
                     {activeSlideEdit && (
-                        <div className="border-t border-foreground/10 bg-background px-4 py-3 space-y-2">
-                            <OverlayFeedback overlays={activeSlideEdit.overlays} selected={selectedElement} />
-                            <TextControls
-                                selected={selectedText}
-                                canAdd={canAddOverlay(activeSlideEdit.overlays.length)}
-                                onAddText={handleAddText}
-                                onDelete={handleDeleteOverlay}
-                                onUpdateText={handleUpdateText}
-                            />
-                            <ShapeControls
-                                selected={selectedShape}
-                                canAdd={canAddOverlay(activeSlideEdit.overlays.length)}
-                                onAddShape={handleAddShape}
-                                onDelete={handleDeleteOverlay}
-                                onUpdateShape={handleUpdateShape}
-                            />
-                            <LayerControls
-                                selectedId={activeSlideEdit.selectedOverlayId}
-                                onBringForward={handleBringForward}
-                                onSendBackward={handleSendBackward}
-                            />
+                        <div className="border-t border-foreground/10 bg-background px-4 py-2">
+                            <button
+                                type="button"
+                                disabled={!canAddOverlay(activeSlideEdit.overlays.length)}
+                                onClick={handleAddText}
+                                title={
+                                    canAddOverlay(activeSlideEdit.overlays.length)
+                                        ? "Adicionar caixa de texto"
+                                        : "Limite de 10 elementos atingido"
+                                }
+                                className="inline-flex items-center gap-1.5 rounded px-2 py-1.5 text-sm text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-40"
+                            >
+                                <FiPlus size={16} />
+                                Adicionar texto
+                            </button>
                         </div>
                     )}
 

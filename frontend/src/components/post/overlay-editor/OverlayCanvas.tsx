@@ -9,6 +9,8 @@ import { useOverlayDrag } from "./use-overlay-drag";
 // Single overlay element renderer
 // ---------------------------------------------------------------------------
 
+type TextUpdatePatch = Partial<Pick<TextOverlay, "text" | "fontSize" | "color">>;
+
 interface OverlayItemProps {
     element: OverlayElement;
     selected: boolean;
@@ -16,6 +18,7 @@ interface OverlayItemProps {
     scale: number;
     onSelect: (id: string) => void;
     onMove: (id: string, x: number, y: number) => void;
+    onUpdateText?: (id: string, patch: TextUpdatePatch) => void;
 }
 
 function TextOverlayItem({ el, scale }: { el: TextOverlay; scale: number }) {
@@ -56,18 +59,26 @@ function ShapeOverlayItem({ el }: { el: ShapeOverlay }) {
     );
 }
 
-function DraggableOverlay({ element, selected, containerRef, scale, onSelect, onMove }: OverlayItemProps) {
-    const handleMove = useCallback(
-        (x: number, y: number) => onMove(element.id, x / scale, y / scale),
-        [element.id, onMove, scale],
-    );
+const DRAG_RAIL_PX = 6;
 
+function DraggableOverlay({ element, selected, containerRef, scale, onSelect, onMove, onUpdateText }: OverlayItemProps) {
     const { handlePointerDown } = useOverlayDrag({
         onMove: (x, y) => onMove(element.id, x / scale, y / scale),
         containerRef,
         elementWidth: element.width * scale,
         elementHeight: element.height * scale,
     });
+
+    const isText = isTextOverlay(element);
+    const inlineTextEdit = Boolean(isText && selected && onUpdateText);
+
+    const startDrag = useCallback(
+        (e: React.PointerEvent, currentX: number, currentY: number) => {
+            onSelect(element.id);
+            handlePointerDown(e, currentX, currentY);
+        },
+        [element.id, onSelect, handlePointerDown],
+    );
 
     return (
         <div
@@ -79,17 +90,49 @@ function DraggableOverlay({ element, selected, containerRef, scale, onSelect, on
                 width: element.width * scale,
                 height: element.height * scale,
                 zIndex: element.zIndex,
-                cursor: "move",
+                cursor: inlineTextEdit ? "default" : "move",
                 outline: selected ? "2px solid #3b82f6" : "none",
                 outlineOffset: 1,
                 boxSizing: "border-box",
+                display: inlineTextEdit ? "flex" : undefined,
+                flexDirection: inlineTextEdit ? "column" : undefined,
             }}
             onPointerDown={e => {
                 onSelect(element.id);
-                handlePointerDown(e, element.x * scale, element.y * scale);
+                if (!inlineTextEdit) {
+                    handlePointerDown(e, element.x * scale, element.y * scale);
+                }
             }}
         >
-            {isTextOverlay(element) && <TextOverlayItem el={element} scale={scale} />}
+            {isText && inlineTextEdit && onUpdateText && (
+                <>
+                    <div
+                        className="shrink-0 cursor-grab touch-none active:cursor-grabbing"
+                        style={{ height: DRAG_RAIL_PX, minHeight: DRAG_RAIL_PX }}
+                        onPointerDown={e => {
+                            e.stopPropagation();
+                            startDrag(e, element.x * scale, element.y * scale);
+                        }}
+                    />
+                    <textarea
+                        value={element.text}
+                        onChange={e => onUpdateText(element.id, { text: e.target.value })}
+                        onPointerDown={e => e.stopPropagation()}
+                        rows={1}
+                        className="min-h-0 w-full flex-1 resize-none border-0 bg-transparent p-0 focus:outline-none"
+                        style={{
+                            fontSize: element.fontSize * scale,
+                            lineHeight: element.lineHeight,
+                            color: element.color,
+                            wordBreak: "break-word",
+                            whiteSpace: "pre-wrap",
+                            overflow: "hidden",
+                            boxSizing: "border-box",
+                        }}
+                    />
+                </>
+            )}
+            {isText && !inlineTextEdit && <TextOverlayItem el={element} scale={scale} />}
             {isShapeOverlay(element) && <ShapeOverlayItem el={element} />}
         </div>
     );
@@ -103,9 +146,10 @@ interface OverlayCanvasProps {
     slide: CarouselSlideEditState;
     onSelect: (id: string | null) => void;
     onMove: (id: string, x: number, y: number) => void;
+    onUpdateText?: (id: string, patch: TextUpdatePatch) => void;
 }
 
-export function OverlayCanvas({ slide, onSelect, onMove }: OverlayCanvasProps) {
+export function OverlayCanvas({ slide, onSelect, onMove, onUpdateText }: OverlayCanvasProps) {
     const containerRef = useRef<HTMLDivElement>(null);
 
     const scale = useMemo(() => {
@@ -121,7 +165,7 @@ export function OverlayCanvas({ slide, onSelect, onMove }: OverlayCanvasProps) {
 
     const handleBackgroundClick = useCallback(
         (e: React.MouseEvent) => {
-            if ((e.target as HTMLElement).dataset?.overlayId) return;
+            if ((e.target as HTMLElement).closest("[data-overlay-id]")) return;
             onSelect(null);
         },
         [onSelect],
@@ -150,6 +194,7 @@ export function OverlayCanvas({ slide, onSelect, onMove }: OverlayCanvasProps) {
                             scale={1}
                             onSelect={(id) => onSelect(id)}
                             onMove={onMove}
+                            onUpdateText={onUpdateText}
                         />
                     ))}
                 </div>
@@ -185,6 +230,7 @@ export function OverlayCanvas({ slide, onSelect, onMove }: OverlayCanvasProps) {
                     scale={1}
                     onSelect={(id) => onSelect(id)}
                     onMove={onMove}
+                    onUpdateText={onUpdateText}
                 />
             ))}
         </div>
