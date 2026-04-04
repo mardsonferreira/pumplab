@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useRef, useCallback, useMemo } from "react";
-import type { OverlayElement, TextOverlay, ShapeOverlay, CarouselSlideEditState } from "@/types";
-import { isTextOverlay, isShapeOverlay, SLIDE_WIDTH, SLIDE_HEIGHT } from "./constants";
+import type { TextOverlay, CarouselSlideEditState } from "@/types";
+import { SLIDE_WIDTH, SLIDE_HEIGHT } from "./constants";
 import { useOverlayDrag } from "./use-overlay-drag";
 
 // ---------------------------------------------------------------------------
@@ -12,7 +12,7 @@ import { useOverlayDrag } from "./use-overlay-drag";
 type TextUpdatePatch = Partial<Pick<TextOverlay, "text" | "fontSize" | "color">>;
 
 interface OverlayItemProps {
-    element: OverlayElement;
+    element: TextOverlay;
     selected: boolean;
     containerRef: React.RefObject<HTMLElement | null>;
     scale: number;
@@ -42,23 +42,6 @@ function TextOverlayItem({ el, scale }: { el: TextOverlay; scale: number }) {
     );
 }
 
-function ShapeOverlayItem({ el }: { el: ShapeOverlay }) {
-    const borderRadius = el.shapeType === "rounded_rectangle" ? "12px" : el.shapeType === "circle" ? "50%" : "0";
-    return (
-        <div
-            style={{
-                width: "100%",
-                height: "100%",
-                borderRadius,
-                backgroundColor: el.filled ? el.color : "transparent",
-                border: el.filled ? "none" : `2px solid ${el.color}`,
-                opacity: el.opacity,
-                pointerEvents: "none",
-            }}
-        />
-    );
-}
-
 const DRAG_RAIL_PX = 6;
 
 function DraggableOverlay({ element, selected, containerRef, scale, onSelect, onMove, onUpdateText }: OverlayItemProps) {
@@ -69,8 +52,7 @@ function DraggableOverlay({ element, selected, containerRef, scale, onSelect, on
         elementHeight: element.height * scale,
     });
 
-    const isText = isTextOverlay(element);
-    const inlineTextEdit = Boolean(isText && selected && onUpdateText);
+    const inlineTextEdit = Boolean(selected && onUpdateText);
 
     const startDrag = useCallback(
         (e: React.PointerEvent, currentX: number, currentY: number) => {
@@ -104,7 +86,7 @@ function DraggableOverlay({ element, selected, containerRef, scale, onSelect, on
                 }
             }}
         >
-            {isText && inlineTextEdit && onUpdateText && (
+            {inlineTextEdit && onUpdateText && (
                 <>
                     <div
                         className="shrink-0 cursor-grab touch-none active:cursor-grabbing"
@@ -132,8 +114,7 @@ function DraggableOverlay({ element, selected, containerRef, scale, onSelect, on
                     />
                 </>
             )}
-            {isText && !inlineTextEdit && <TextOverlayItem el={element} scale={scale} />}
-            {isShapeOverlay(element) && <ShapeOverlayItem el={element} />}
+            {!inlineTextEdit && <TextOverlayItem el={element} scale={scale} />}
         </div>
     );
 }
@@ -154,7 +135,6 @@ export function OverlayCanvas({ slide, onSelect, onMove, onUpdateText }: Overlay
 
     const scale = useMemo(() => {
         if (typeof window === "undefined") return 1;
-        // Actual rendered width will be set by the parent; we normalize in layout
         return 1;
     }, []);
 
@@ -192,7 +172,7 @@ export function OverlayCanvas({ slide, onSelect, onMove, onUpdateText }: Overlay
                             selected={el.id === slide.selectedOverlayId}
                             containerRef={containerRef}
                             scale={1}
-                            onSelect={(id) => onSelect(id)}
+                            onSelect={id => onSelect(id)}
                             onMove={onMove}
                             onUpdateText={onUpdateText}
                         />
@@ -228,7 +208,7 @@ export function OverlayCanvas({ slide, onSelect, onMove, onUpdateText }: Overlay
                     selected={el.id === slide.selectedOverlayId}
                     containerRef={containerRef}
                     scale={1}
-                    onSelect={(id) => onSelect(id)}
+                    onSelect={id => onSelect(id)}
                     onMove={onMove}
                     onUpdateText={onUpdateText}
                 />

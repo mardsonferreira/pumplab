@@ -18,7 +18,7 @@ import { flattenSlide } from "./overlay-editor/export/flatten-slide";
 import { overlayReducer } from "./overlay-editor/state";
 import { createTextOverlay } from "./overlay-editor/factories";
 import { computeTextFit } from "./overlay-editor/text-fit";
-import { isTextOverlay, canAddOverlay, SLIDE_WIDTH, SLIDE_HEIGHT } from "./overlay-editor/constants";
+import { canAddOverlay, SLIDE_WIDTH, SLIDE_HEIGHT } from "./overlay-editor/constants";
 import type { CarouselSlide as CarouselSlideType, TextOverlay } from "@/types";
 
 export function Post() {
@@ -43,8 +43,7 @@ export function Post() {
     const selectedElement = activeSlideEdit
         ? activeSlideEdit.overlays.find(o => o.id === activeSlideEdit.selectedOverlayId) ?? null
         : null;
-    const selectedText: TextOverlay | null =
-        selectedElement && isTextOverlay(selectedElement) ? selectedElement : null;
+    const selectedText: TextOverlay | null = selectedElement;
 
     // --- Overlay actions ---
 
@@ -98,7 +97,7 @@ export function Post() {
             let fullPatch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color" | "overflow">> = { ...patch };
             if (patch.text !== undefined || patch.fontSize !== undefined) {
                 const el = activeSlideEdit?.overlays.find(o => o.id === id);
-                if (el && isTextOverlay(el)) {
+                if (el) {
                     const text = patch.text ?? el.text;
                     const fontSize = patch.fontSize ?? el.fontSize;
                     const { overflow } = computeTextFit(text, fontSize, el.width, el.height, el.lineHeight);

@@ -5,8 +5,8 @@
 
 ## Summary
 
-Replace image-baked text with a simple in-editor overlay system where users can add/edit text and basic shapes directly over each carousel slide, keep changes per slide during the active tab session, and export exactly what is previewed.
-Implementation keeps the current stack and prioritizes a focused frontend module (overlay editor state + rendering + controls) with minimal backend contract extension only where export must receive overlay-ready image data.
+Replace image-baked text with a simple in-editor **text-only** overlay system: users add/edit text directly over each carousel slide, keep changes per slide during the active tab session, and export exactly what is previewed (flattened PNG per slide).
+Implementation keeps the current stack and prioritizes a focused frontend module (overlay state + canvas rendering + floating toolbar and post-level actions) with minimal backend contract extension only where export must receive overlay-ready image data.
 
 ## Technical Context
 

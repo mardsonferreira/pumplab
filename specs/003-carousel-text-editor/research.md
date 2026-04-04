@@ -1,15 +1,15 @@
 # Research: Carousel Overlay Editing
 
 ## Decision 1: Keep overlay editor implementation inside existing React stack (no new editor framework)
-- Decision: Build text/shape overlay interactions with React state, existing Zustand store, and native browser events/CSS transforms.
-- Rationale: The scope is intentionally simple (move, resize text, recolor, simple shapes), so adding a full canvas/editor library would increase dependency weight and long-term maintenance for little gain.
+- Decision: Build text overlay interactions with React state, existing Zustand store, and native browser events/CSS transforms.
+- Rationale: The scope is intentionally simple (move text, edit content, font size, color), so adding a full canvas/editor library would increase dependency weight and long-term maintenance for little gain.
 - Alternatives considered:
   - `fabric.js`: mature but adds a heavier abstraction and shifts app architecture to canvas-first editing.
   - `konva/react-konva`: solid community usage, but still introduces non-trivial rendering/event layers unnecessary for this limited feature set.
 
 ## Decision 2: Use a dedicated frontend module to isolate complexity
 - Decision: Introduce an organized overlay editor module (state + render + controls) under post-related components instead of mixing all logic into a single page component.
-- Rationale: Feature touches many behaviors (selection, bounds constraints, z-order, overflow warnings, per-slide state), and modularization keeps the code understandable and maintainable without over-abstracting.
+- Rationale: Feature touches many behaviors (selection, bounds constraints, text fit / overflow, per-slide state), and modularization keeps the code understandable and maintainable without over-abstracting.
 - Alternatives considered:
   - Single large component in `post` page: faster initially but high readability and regression risk.
   - Generic cross-app editor framework: over-engineered for a single workflow.

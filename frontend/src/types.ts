@@ -63,26 +63,20 @@ export type Carousel = {
 };
 
 // ---------------------------------------------------------------------------
-// Overlay editor domain types (per-slide in-session editing)
+// Overlay editor domain types (per-slide in-session editing, text only)
 // ---------------------------------------------------------------------------
 
-export type OverlayKind = "text" | "shape";
-export type ShapeType = "rectangle" | "rounded_rectangle" | "circle";
 export type OverflowStatus = "none" | "warning";
 export type ImageLoadStatus = "pending" | "success" | "failed";
 
-interface OverlayBase {
+export interface TextOverlay {
     id: string;
-    kind: OverlayKind;
+    kind: "text";
     x: number;
     y: number;
     width: number;
     height: number;
     zIndex: number;
-}
-
-export interface TextOverlay extends OverlayBase {
-    kind: "text";
     text: string;
     fontSize: number;
     color: string;
@@ -90,20 +84,10 @@ export interface TextOverlay extends OverlayBase {
     overflow: OverflowStatus;
 }
 
-export interface ShapeOverlay extends OverlayBase {
-    kind: "shape";
-    shapeType: ShapeType;
-    color: string;
-    filled: boolean;
-    opacity: number;
-}
-
-export type OverlayElement = TextOverlay | ShapeOverlay;
-
 export interface CarouselSlideEditState {
     slideIndex: number;
     baseImageUrl: string | null;
-    overlays: OverlayElement[];
+    overlays: TextOverlay[];
     selectedOverlayId: string | null;
     imageStatus: ImageLoadStatus;
     imageErrorMessage: string | null;

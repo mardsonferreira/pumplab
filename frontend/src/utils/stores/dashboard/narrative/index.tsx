@@ -5,7 +5,7 @@ import type {
     Narrative,
     PostPreview,
     OverlaySessionState,
-    OverlayElement,
+    TextOverlay,
     CarouselSlideEditState,
 } from "@/types";
 
@@ -19,7 +19,7 @@ interface NarrativeStore {
     // Overlay session helpers
     initOverlaySession: (session: OverlaySessionState) => void;
     setActiveSlide: (index: number) => void;
-    updateSlideOverlays: (slideIndex: number, overlays: OverlayElement[]) => void;
+    updateSlideOverlays: (slideIndex: number, overlays: TextOverlay[]) => void;
     setSelectedOverlay: (slideIndex: number, overlayId: string | null) => void;
     getActiveSlideEdit: () => CarouselSlideEditState | null;
 }
@@ -57,7 +57,7 @@ export const useNarrativeStore = create<NarrativeStore>()(
                     });
                 },
 
-                updateSlideOverlays: (slideIndex: number, overlays: OverlayElement[]) => {
+                updateSlideOverlays: (slideIndex: number, overlays: TextOverlay[]) => {
                     const pp = get().postPreview;
                     if (!pp?.overlaySession) return;
                     const prev = pp.overlaySession.slides[slideIndex];
