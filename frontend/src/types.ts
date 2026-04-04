@@ -40,6 +40,8 @@ export type PostPreview = {
     last_generation_at?: string;
     /** Global style from master for image retries. */
     style?: { color_palette: string; visual_style: string };
+    /** Per-slide overlay editing session (in-memory only, discarded on refresh). */
+    overlaySession?: OverlaySessionState;
 };
 
 /** Shape after `httpUtil` camelCases the API JSON (snake_case in wire format). */
@@ -59,6 +61,58 @@ export type CarouselPromptObject = {
 export type Carousel = {
     images_url: string[];
 };
+
+// ---------------------------------------------------------------------------
+// Overlay editor domain types (per-slide in-session editing)
+// ---------------------------------------------------------------------------
+
+export type OverlayKind = "text" | "shape";
+export type ShapeType = "rectangle" | "rounded_rectangle" | "circle";
+export type OverflowStatus = "none" | "warning";
+export type ImageLoadStatus = "pending" | "success" | "failed";
+
+interface OverlayBase {
+    id: string;
+    kind: OverlayKind;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    zIndex: number;
+}
+
+export interface TextOverlay extends OverlayBase {
+    kind: "text";
+    text: string;
+    fontSize: number;
+    color: string;
+    lineHeight: number;
+    overflow: OverflowStatus;
+}
+
+export interface ShapeOverlay extends OverlayBase {
+    kind: "shape";
+    shapeType: ShapeType;
+    color: string;
+    filled: boolean;
+    opacity: number;
+}
+
+export type OverlayElement = TextOverlay | ShapeOverlay;
+
+export interface CarouselSlideEditState {
+    slideIndex: number;
+    baseImageUrl: string | null;
+    overlays: OverlayElement[];
+    selectedOverlayId: string | null;
+    imageStatus: ImageLoadStatus;
+    imageErrorMessage: string | null;
+}
+
+export interface OverlaySessionState {
+    slides: Record<number, CarouselSlideEditState>;
+    activeSlideIndex: number;
+}
 
 
 export type SubscriptionWithPlan = {

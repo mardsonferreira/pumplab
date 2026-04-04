@@ -12,9 +12,25 @@ import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { useGenerateCarousel } from "@/app/hooks/openai";
 import { exportCarouselPost } from "@/utils/api/openai/export-carousel-post";
 import { updateTotalPostsGenerated } from "@/utils/api/post-usage/update-total-posts-generated";
+import { OverlayCanvas } from "./overlay-editor/OverlayCanvas";
+import { flattenSlide } from "./overlay-editor/export/flatten-slide";
+import { TextControls } from "./overlay-editor/TextControls";
+import { ShapeControls } from "./overlay-editor/ShapeControls";
+import { LayerControls } from "./overlay-editor/LayerControls";
+import { OverlayFeedback } from "./overlay-editor/OverlayFeedback";
+import { overlayReducer } from "./overlay-editor/state";
+import { createTextOverlay, createShapeOverlay } from "./overlay-editor/factories";
+import { computeTextFit } from "./overlay-editor/text-fit";
+import { isTextOverlay, isShapeOverlay, canAddOverlay, SLIDE_WIDTH, SLIDE_HEIGHT } from "./overlay-editor/constants";
+import type { CarouselSlide as CarouselSlideType, OverlayElement, TextOverlay, ShapeOverlay, ShapeType } from "@/types";
 
 export function Post() {
-    const { postPreview } = useNarrativeStore();
+    const {
+        postPreview,
+        setActiveSlide,
+        updateSlideOverlays,
+        setSelectedOverlay,
+    } = useNarrativeStore();
     const { retryFailedSlides, retrying, error } = useGenerateCarousel();
     const [exportError, setExportError] = useState<string | null>(null);
     const [exporting, setExporting] = useState(false);
@@ -22,17 +38,140 @@ export function Post() {
     const hasFailedSlides =
         postPreview?.slides?.some(s => s.status === "failed") ?? false;
 
+    const session = postPreview?.overlaySession;
+    const activeSlideEdit = session
+        ? session.slides[session.activeSlideIndex] ?? null
+        : null;
+
+    const selectedElement = activeSlideEdit
+        ? activeSlideEdit.overlays.find(o => o.id === activeSlideEdit.selectedOverlayId) ?? null
+        : null;
+    const selectedText: TextOverlay | null =
+        selectedElement && isTextOverlay(selectedElement) ? selectedElement : null;
+    const selectedShape: ShapeOverlay | null =
+        selectedElement && isShapeOverlay(selectedElement) ? selectedElement : null;
+
+    // --- Overlay actions ---
+
+    const handleSlideChange = useCallback(
+        (index: number) => setActiveSlide(index),
+        [setActiveSlide],
+    );
+
+    const dispatchOverlay = useCallback(
+        (action: Parameters<typeof overlayReducer>[1]) => {
+            if (!activeSlideEdit || !session) return;
+            const next = overlayReducer(activeSlideEdit.overlays, action);
+            updateSlideOverlays(session.activeSlideIndex, next);
+        },
+        [activeSlideEdit, session, updateSlideOverlays],
+    );
+
+    const handleSelectOverlay = useCallback(
+        (id: string | null) => {
+            if (!session) return;
+            setSelectedOverlay(session.activeSlideIndex, id);
+        },
+        [session, setSelectedOverlay],
+    );
+
+    const handleMove = useCallback(
+        (id: string, x: number, y: number) => {
+            dispatchOverlay({ type: "MOVE", id, x, y, containerW: SLIDE_WIDTH, containerH: SLIDE_HEIGHT });
+        },
+        [dispatchOverlay],
+    );
+
+    const handleAddText = useCallback(() => {
+        if (!activeSlideEdit) return;
+        const maxZ = activeSlideEdit.overlays.reduce((m, o) => Math.max(m, o.zIndex), 0);
+        const overlay = createTextOverlay("Novo texto", maxZ);
+        dispatchOverlay({ type: "ADD_OVERLAY", overlay });
+        if (session) setSelectedOverlay(session.activeSlideIndex, overlay.id);
+    }, [activeSlideEdit, dispatchOverlay, session, setSelectedOverlay]);
+
+    const handleDeleteOverlay = useCallback(
+        (id: string) => {
+            dispatchOverlay({ type: "DELETE_OVERLAY", id });
+            handleSelectOverlay(null);
+        },
+        [dispatchOverlay, handleSelectOverlay],
+    );
+
+    const handleUpdateText = useCallback(
+        (id: string, patch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color">>) => {
+            dispatchOverlay({ type: "UPDATE_TEXT", id, patch });
+
+            if (patch.text !== undefined || patch.fontSize !== undefined) {
+                const el = activeSlideEdit?.overlays.find(o => o.id === id);
+                if (el && isTextOverlay(el)) {
+                    const text = patch.text ?? el.text;
+                    const fontSize = patch.fontSize ?? el.fontSize;
+                    const { overflow } = computeTextFit(text, fontSize, el.width, el.height, el.lineHeight);
+                    dispatchOverlay({ type: "UPDATE_TEXT", id, patch: { overflow } });
+                }
+            }
+        },
+        [dispatchOverlay, activeSlideEdit],
+    );
+
+    const handleAddShape = useCallback(
+        (shapeType: ShapeType) => {
+            if (!activeSlideEdit) return;
+            const minZ = activeSlideEdit.overlays.reduce((m, o) => Math.min(m, o.zIndex), 0);
+            const overlay = createShapeOverlay(shapeType, minZ);
+            dispatchOverlay({ type: "ADD_OVERLAY", overlay });
+            if (session) setSelectedOverlay(session.activeSlideIndex, overlay.id);
+        },
+        [activeSlideEdit, dispatchOverlay, session, setSelectedOverlay],
+    );
+
+    const handleUpdateShape = useCallback(
+        (id: string, patch: Partial<Pick<ShapeOverlay, "shapeType" | "color" | "filled" | "opacity">>) => {
+            dispatchOverlay({ type: "UPDATE_SHAPE", id, patch });
+        },
+        [dispatchOverlay],
+    );
+
+    const handleBringForward = useCallback(
+        (id: string) => dispatchOverlay({ type: "BRING_FORWARD", id }),
+        [dispatchOverlay],
+    );
+
+    const handleSendBackward = useCallback(
+        (id: string) => dispatchOverlay({ type: "SEND_BACKWARD", id }),
+        [dispatchOverlay],
+    );
+
+    // --- Export ---
+
     const handleDownloadPost = useCallback(async () => {
         if (!postPreview?.caption || !postPreview?.slides?.length) return;
         setExportError(null);
         setExporting(true);
         try {
+            // Flatten overlays onto each slide image for WYSIWYG export
+            const flattenedMap: Record<number, string> = {};
+            if (session) {
+                for (const s of postPreview.slides) {
+                    const slideEdit = session.slides[s.index];
+                    if (slideEdit && slideEdit.overlays.length > 0) {
+                        try {
+                            flattenedMap[s.index] = await flattenSlide(slideEdit);
+                        } catch {
+                            // Fallback to image_url if flattening fails
+                        }
+                    }
+                }
+            }
+
             const blob = await exportCarouselPost(
                 postPreview.caption,
                 postPreview.slides.map(s => ({
                     index: s.index,
                     image_url: s.image_url,
                     text: s.text,
+                    flattened_image_base64: flattenedMap[s.index],
                 })),
             );
             const url = URL.createObjectURL(blob);
@@ -63,11 +202,29 @@ export function Post() {
         } finally {
             setExporting(false);
         }
-    }, [postPreview]);
+    }, [postPreview, session, router]);
+
+    // --- Render ---
 
     const caption = postPreview?.caption ?? "";
     const slides = postPreview?.slides ?? undefined;
     const readyToDownload = postPreview?.ready_to_download ?? false;
+
+    /** Renders only the visual canvas of the active slide inside the carousel. */
+    const renderSlide = useCallback(
+        (slide: CarouselSlideType, _idx: number) => {
+            const slideEdit = session?.slides[slide.index];
+            if (!slideEdit) return null;
+            return (
+                <OverlayCanvas
+                    slide={slideEdit}
+                    onSelect={handleSelectOverlay}
+                    onMove={handleMove}
+                />
+            );
+        },
+        [session, handleSelectOverlay, handleMove],
+    );
 
     return (
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
@@ -87,8 +244,42 @@ export function Post() {
 
                 <div className="bg-foreground/5 border-foreground/10 overflow-hidden rounded-md border shadow-2xl backdrop-blur-sm">
                     <div className="bg-background">
-                        <Carousel slides={slides} />
+                        {session ? (
+                            <Carousel
+                                slides={slides}
+                                onSlideChange={handleSlideChange}
+                                renderSlide={renderSlide}
+                            />
+                        ) : (
+                            <Carousel slides={slides} />
+                        )}
                     </div>
+
+                    {/* Overlay controls below carousel */}
+                    {activeSlideEdit && (
+                        <div className="border-t border-foreground/10 bg-background px-4 py-3 space-y-2">
+                            <OverlayFeedback overlays={activeSlideEdit.overlays} selected={selectedElement} />
+                            <TextControls
+                                selected={selectedText}
+                                canAdd={canAddOverlay(activeSlideEdit.overlays.length)}
+                                onAddText={handleAddText}
+                                onDelete={handleDeleteOverlay}
+                                onUpdateText={handleUpdateText}
+                            />
+                            <ShapeControls
+                                selected={selectedShape}
+                                canAdd={canAddOverlay(activeSlideEdit.overlays.length)}
+                                onAddShape={handleAddShape}
+                                onDelete={handleDeleteOverlay}
+                                onUpdateShape={handleUpdateShape}
+                            />
+                            <LayerControls
+                                selectedId={activeSlideEdit.selectedOverlayId}
+                                onBringForward={handleBringForward}
+                                onSendBackward={handleSendBackward}
+                            />
+                        </div>
+                    )}
 
                     <div className="space-y-6 px-4 py-6 sm:px-6">
                         <div className="space-y-3">

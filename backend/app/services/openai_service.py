@@ -97,7 +97,11 @@ def _build_image_prompt(
     role: str | None = None,
     slide_text: str | None = None,
 ) -> str:
-    """Combine global style, slide description, and typography for consistent images."""
+    """Combine global style and slide description for a text-free background image.
+
+    Text overlays are handled client-side, so the generated image must contain
+    NO rendered text, letters, numbers, or typography of any kind.
+    """
     parts = []
     if style:
         cp = (style.get("color_palette") or "").strip()
@@ -107,11 +111,11 @@ def _build_image_prompt(
             parts.append(f"Visual style (apply to entire image): {style_desc}.")
     if role:
         parts.append(f"Narrative role for this slide: {role}.")
-    if slide_text:
-        parts.append(f"Overlay text content (Brazilian Portuguese): {slide_text}.")
     parts.append(
-        "Typography: bold and highly readable text overlay, high contrast, "
-        "safe margins, and layout optimized for Instagram."
+        "CRITICAL: Do NOT include any text, words, letters, numbers, captions, titles, "
+        "labels, or typography in the image. The image must be purely visual with no "
+        "readable text content. Design the composition to work well as a background "
+        "for text that will be overlaid later."
     )
     parts.append(f"Scene: {slide_prompt}")
     return " ".join(parts)
