@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import Slider from "react-slick";
 import type { CarouselSlide as CarouselSlideType } from "@/types";
 
@@ -12,6 +12,10 @@ const PLACEHOLDER_IMAGES = [1, 2, 3, 4, 5].map(id => ({
 interface CarouselProps {
     /** When provided, renders generated slides with text and image (or loading/error). */
     slides?: CarouselSlideType[];
+    /** Called when the active slide changes (1-based index). */
+    onSlideChange?: (index: number) => void;
+    /** Custom renderer for each slide; when provided replaces the default SlideContent. */
+    renderSlide?: (slide: CarouselSlideType, index: number) => React.ReactNode;
 }
 
 function SlideContent({ slide }: { slide: CarouselSlideType }) {
@@ -61,7 +65,18 @@ function SlideWrapper({ children }: { children: React.ReactNode }) {
     return <div className="w-full">{children}</div>;
 }
 
-export function Carousel({ slides }: CarouselProps) {
+export function Carousel({ slides, onSlideChange, renderSlide }: CarouselProps) {
+    const sliderRef = useRef<Slider>(null);
+
+    const handleAfterChange = useCallback(
+        (currentSlide: number) => {
+            if (!slides?.length || !onSlideChange) return;
+            const slide = slides[currentSlide];
+            if (slide) onSlideChange(slide.index);
+        },
+        [slides, onSlideChange],
+    );
+
     const settings = {
         dots: true,
         fade: true,
@@ -70,11 +85,12 @@ export function Carousel({ slides }: CarouselProps) {
         slidesToShow: 1,
         slidesToScroll: 1,
         waitForAnimate: false,
-        autoplay: !!slides?.length,
+        autoplay: false,//!onSlideChange && !!slides?.length,
         autoplaySpeed: 3000,
         pauseOnHover: true,
         arrows: true,
         accessibility: true,
+        afterChange: handleAfterChange,
     };
 
     const items = slides?.length === 5 ? slides : null;
@@ -82,12 +98,14 @@ export function Carousel({ slides }: CarouselProps) {
     return (
         <div className="mx-auto w-full">
             <div className="slider-container">
-                <Slider {...settings}>
+                <Slider ref={sliderRef} {...settings}>
                     {items
-                        ? items.map(slide => (
+                        ? items.map((slide, idx) => (
                               <div key={slide.index} className="px-0">
                                   <SlideWrapper>
-                                      <SlideContent slide={slide} />
+                                      {renderSlide
+                                          ? renderSlide(slide, idx)
+                                          : <SlideContent slide={slide} />}
                                   </SlideWrapper>
                               </div>
                           ))

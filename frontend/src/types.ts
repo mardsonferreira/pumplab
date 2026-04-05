@@ -40,6 +40,8 @@ export type PostPreview = {
     last_generation_at?: string;
     /** Global style from master for image retries. */
     style?: { color_palette: string; visual_style: string };
+    /** Per-slide overlay editing session (in-memory only, discarded on refresh). */
+    overlaySession?: OverlaySessionState;
 };
 
 /** Shape after `httpUtil` camelCases the API JSON (snake_case in wire format). */
@@ -59,6 +61,42 @@ export type CarouselPromptObject = {
 export type Carousel = {
     images_url: string[];
 };
+
+// ---------------------------------------------------------------------------
+// Overlay editor domain types (per-slide in-session editing, text only)
+// ---------------------------------------------------------------------------
+
+export type OverflowStatus = "none" | "warning";
+export type ImageLoadStatus = "pending" | "success" | "failed";
+
+export interface TextOverlay {
+    id: string;
+    kind: "text";
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    zIndex: number;
+    text: string;
+    fontSize: number;
+    color: string;
+    lineHeight: number;
+    overflow: OverflowStatus;
+}
+
+export interface CarouselSlideEditState {
+    slideIndex: number;
+    baseImageUrl: string | null;
+    overlays: TextOverlay[];
+    selectedOverlayId: string | null;
+    imageStatus: ImageLoadStatus;
+    imageErrorMessage: string | null;
+}
+
+export interface OverlaySessionState {
+    slides: Record<number, CarouselSlideEditState>;
+    activeSlideIndex: number;
+}
 
 
 export type SubscriptionWithPlan = {
