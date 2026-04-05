@@ -5,7 +5,6 @@ import {
     DEFAULT_TEXT_COLOR,
     DEFAULT_TEXT_WIDTH,
     DEFAULT_TEXT_HEIGHT,
-    SLIDE_WIDTH,
     SLIDE_HEIGHT,
 } from "./constants";
 
@@ -26,8 +25,8 @@ export function createTextOverlay(
     return {
         id: nextId("txt"),
         kind: "text",
-        x: opts?.x ?? Math.round((SLIDE_WIDTH - width) / 2),
-        y: opts?.y ?? Math.round((SLIDE_HEIGHT - height) / 2),
+        x: opts?.x ?? 0,
+        y: opts?.y ?? SLIDE_HEIGHT - height,
         width,
         height,
         zIndex: maxZ + 1,

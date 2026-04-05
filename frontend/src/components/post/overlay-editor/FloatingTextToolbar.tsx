@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import type { TextOverlay } from "@/types";
 import { MIN_FONT_SIZE, MAX_FONT_SIZE } from "./constants";
@@ -11,23 +11,50 @@ const TOOLBAR_OFFSET = 6;
 
 interface FloatingTextToolbarProps {
     selected: TextOverlay;
+    /** Multiply logical slide coordinates (1024×1024 space) to match the on-screen canvas. */
+    scale?: number;
     onUpdateText: (id: string, patch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color">>) => void;
     onDelete: (id: string) => void;
 }
 
-export function FloatingTextToolbar({ selected, onUpdateText, onDelete }: FloatingTextToolbarProps) {
-    const showAbove = selected.y >= TOOLBAR_HEIGHT_ESTIMATE + TOOLBAR_OFFSET;
+export function FloatingTextToolbar({
+    selected,
+    scale = 1,
+    onUpdateText,
+    onDelete,
+}: FloatingTextToolbarProps) {
+    const yPx = selected.y * scale;
+    const xPx = selected.x * scale;
+    const hPx = selected.height * scale;
+    const showAbove = yPx >= TOOLBAR_HEIGHT_ESTIMATE + TOOLBAR_OFFSET;
     const top = showAbove
-        ? selected.y - TOOLBAR_HEIGHT_ESTIMATE - TOOLBAR_OFFSET
-        : selected.y + selected.height + TOOLBAR_OFFSET;
+        ? yPx - TOOLBAR_HEIGHT_ESTIMATE - TOOLBAR_OFFSET
+        : yPx + hPx + TOOLBAR_OFFSET;
 
-    const handleFontSizeChange = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            const size = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, Number(e.target.value)));
-            onUpdateText(selected.id, { fontSize: size });
-        },
-        [selected.id, onUpdateText],
-    );
+    /** Local string so the user can clear the field and type a new value; parent stores a clamped number. */
+    const [fontSizeDraft, setFontSizeDraft] = useState(() => String(selected.fontSize));
+
+    useEffect(() => {
+        setFontSizeDraft(String(selected.fontSize));
+    }, [selected.id, selected.fontSize]);
+
+    const commitFontSize = useCallback(() => {
+        const trimmed = fontSizeDraft.trim();
+        const parsed = parseInt(trimmed, 10);
+        if (trimmed === "" || !Number.isFinite(parsed)) {
+            setFontSizeDraft(String(selected.fontSize));
+            return;
+        }
+        const clamped = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, parsed));
+        setFontSizeDraft(String(clamped));
+        if (clamped !== selected.fontSize) {
+            onUpdateText(selected.id, { fontSize: clamped });
+        }
+    }, [fontSizeDraft, selected.fontSize, selected.id, onUpdateText]);
+
+    const handleFontSizeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setFontSizeDraft(e.target.value);
+    }, []);
 
     const handleColorChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +68,7 @@ export function FloatingTextToolbar({ selected, onUpdateText, onDelete }: Floati
             style={{
                 position: "absolute",
                 top,
-                left: Math.max(0, selected.x),
+                left: Math.max(0, xPx),
                 zIndex: 1000,
                 minWidth: 220,
                 maxWidth: "calc(100% - 4px)",
@@ -54,11 +81,18 @@ export function FloatingTextToolbar({ selected, onUpdateText, onDelete }: Floati
                     <label className="flex items-center gap-1.5 text-xs text-zinc-200" title="Tamanho da fonte">
                         <span className="font-semibold select-none">Aa</span>
                         <input
-                            type="number"
-                            value={selected.fontSize}
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            value={fontSizeDraft}
                             onChange={handleFontSizeChange}
-                            min={MIN_FONT_SIZE}
-                            max={MAX_FONT_SIZE}
+                            onBlur={commitFontSize}
+                            onKeyDown={e => {
+                                if (e.key === "Enter") {
+                                    (e.target as HTMLInputElement).blur();
+                                }
+                            }}
+                            aria-label="Tamanho da fonte"
                             className="w-12 rounded-md border border-zinc-400 bg-white px-1.5 py-0.5 text-xs font-medium text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-zinc-950"
                         />
                     </label>

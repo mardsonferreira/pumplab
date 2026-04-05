@@ -35,6 +35,15 @@ export function useOverlayResize({ onResize, containerRef, scale }: UseOverlayRe
             const container = containerRef.current;
             if (!container) return;
 
+            const captureTarget = e.currentTarget;
+            if (captureTarget instanceof HTMLElement && e.pointerId != null) {
+                try {
+                    captureTarget.setPointerCapture(e.pointerId);
+                } catch {
+                    /* noop */
+                }
+            }
+
             session.current = {
                 handle,
                 startRect: { ...startRect },
@@ -45,6 +54,7 @@ export function useOverlayResize({ onResize, containerRef, scale }: UseOverlayRe
             const onMove = (ev: PointerEvent) => {
                 const s = session.current;
                 if (!s || !container) return;
+                ev.preventDefault();
                 const { dx, dy } = pointerDeltaInContainerSpace(
                     container,
                     ev.clientX - s.startClientX,
@@ -54,14 +64,21 @@ export function useOverlayResize({ onResize, containerRef, scale }: UseOverlayRe
                 onResize(next.x / scale, next.y / scale, next.width / scale, next.height / scale);
             };
 
-            const onUp = () => {
+            const onUp = (ev: PointerEvent) => {
                 session.current = null;
+                if (captureTarget instanceof HTMLElement && ev.pointerId != null) {
+                    try {
+                        captureTarget.releasePointerCapture(ev.pointerId);
+                    } catch {
+                        /* noop */
+                    }
+                }
                 window.removeEventListener("pointermove", onMove);
                 window.removeEventListener("pointerup", onUp);
                 window.removeEventListener("pointercancel", onUp);
             };
 
-            window.addEventListener("pointermove", onMove);
+            window.addEventListener("pointermove", onMove, { passive: false });
             window.addEventListener("pointerup", onUp);
             window.addEventListener("pointercancel", onUp);
         },

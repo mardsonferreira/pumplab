@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useRef, useCallback, useMemo } from "react";
+import React, { useRef, useCallback, useMemo, useState, useLayoutEffect } from "react";
 import type { TextOverlay, CarouselSlideEditState } from "@/types";
 import { useOverlayDrag } from "./use-overlay-drag";
 import { useOverlayResize } from "./use-overlay-resize";
 import type { ResizeHandleId } from "./resize-geometry";
+import { FloatingTextToolbar } from "./FloatingTextToolbar";
+import { SLIDE_WIDTH } from "./constants";
 
 // ---------------------------------------------------------------------------
 // Single overlay element renderer
@@ -207,6 +209,7 @@ function DraggableOverlay({
     return (
         <div
             data-overlay-id={element.id}
+            className="touch-none"
             style={{
                 position: "absolute",
                 left: element.x * scale,
@@ -251,7 +254,7 @@ function DraggableOverlay({
                         onChange={e => onUpdateText(element.id, { text: e.target.value })}
                         onPointerDown={e => e.stopPropagation()}
                         rows={1}
-                        className="min-h-0 w-full flex-1 resize-none border-0 bg-transparent p-0 focus:outline-none"
+                        className="min-h-0 w-full flex-1 touch-manipulation resize-none border-0 bg-transparent p-0 focus:outline-none"
                         style={{
                             fontSize: element.fontSize * scale,
                             lineHeight: element.lineHeight,
@@ -260,6 +263,7 @@ function DraggableOverlay({
                             whiteSpace: "pre-wrap",
                             overflow: "hidden",
                             boxSizing: "border-box",
+                            touchAction: "manipulation",
                         }}
                     />
                 </>
@@ -279,15 +283,52 @@ interface OverlayCanvasProps {
     onMove: (id: string, x: number, y: number) => void;
     onUpdateText?: (id: string, patch: TextUpdatePatch) => void;
     onResize?: (id: string, x: number, y: number, width: number, height: number) => void;
+    /** When true, show the style toolbar for the selected overlay (active carousel slide only). */
+    isActive?: boolean;
+    onDeleteOverlay?: (id: string) => void;
 }
 
-export function OverlayCanvas({ slide, onSelect, onMove, onUpdateText, onResize }: OverlayCanvasProps) {
-    const containerRef = useRef<HTMLDivElement>(null);
+function useSlideScale(
+    containerRef: React.RefObject<HTMLElement | null>,
+    /** When the canvas mounts a different DOM subtree (e.g. failed vs loaded image), re-attach the observer. */
+    layoutKey: string,
+): number {
+    const [scale, setScale] = useState(1);
 
-    const scale = useMemo(() => {
-        if (typeof window === "undefined") return 1;
-        return 1;
-    }, []);
+    useLayoutEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+
+        const update = () => {
+            const w = el.clientWidth;
+            if (w > 0) setScale(w / SLIDE_WIDTH);
+        };
+
+        update();
+        const ro = new ResizeObserver(entries => {
+            const w = entries[0]?.contentRect.width ?? el.clientWidth;
+            if (w > 0) setScale(w / SLIDE_WIDTH);
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [containerRef, layoutKey]);
+
+    return scale;
+}
+
+export function OverlayCanvas({
+    slide,
+    onSelect,
+    onMove,
+    onUpdateText,
+    onResize,
+    isActive = true,
+    onDeleteOverlay,
+}: OverlayCanvasProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const scaleLayoutKey =
+        slide.imageStatus === "failed" ? "failed" : slide.baseImageUrl ? "image" : slide.imageStatus;
+    const scale = useSlideScale(containerRef, scaleLayoutKey);
 
     const sortedOverlays = useMemo(
         () => [...slide.overlays].sort((a, b) => a.zIndex - b.zIndex),
@@ -302,70 +343,92 @@ export function OverlayCanvas({ slide, onSelect, onMove, onUpdateText, onResize 
         [onSelect],
     );
 
+    const selectedOverlay = sortedOverlays.find(o => o.id === slide.selectedOverlayId) ?? null;
+
     if (slide.imageStatus === "failed") {
         return (
-            <div className="relative aspect-square w-full bg-destructive/10 flex flex-col items-center justify-center gap-2 p-4">
-                <p className="text-sm font-medium text-destructive">
-                    {slide.imageErrorMessage ?? "Falha ao carregar imagem."}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                    Você pode tentar novamente ou continuar editando os overlays.
-                </p>
-                <div
-                    ref={containerRef}
-                    className="absolute inset-0"
-                    onClick={handleBackgroundClick}
-                >
-                    {sortedOverlays.map(el => (
-                        <DraggableOverlay
-                            key={el.id}
-                            element={el}
-                            selected={el.id === slide.selectedOverlayId}
-                            containerRef={containerRef}
-                            scale={1}
-                            onSelect={id => onSelect(id)}
-                            onMove={onMove}
-                            onUpdateText={onUpdateText}
-                            onResize={onResize}
-                        />
-                    ))}
+            <div className="relative w-full">
+                <div className="relative aspect-square w-full bg-destructive/10 flex flex-col items-center justify-center gap-2 p-4">
+                    <p className="text-sm font-medium text-destructive">
+                        {slide.imageErrorMessage ?? "Falha ao carregar imagem."}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                        Você pode tentar novamente ou continuar editando os overlays.
+                    </p>
+                    <div
+                        ref={containerRef}
+                        className="absolute inset-0"
+                        onClick={handleBackgroundClick}
+                    >
+                        {sortedOverlays.map(el => (
+                            <DraggableOverlay
+                                key={el.id}
+                                element={el}
+                                selected={el.id === slide.selectedOverlayId}
+                                containerRef={containerRef}
+                                scale={scale}
+                                onSelect={id => onSelect(id)}
+                                onMove={onMove}
+                                onUpdateText={onUpdateText}
+                                onResize={onResize}
+                            />
+                        ))}
+                    </div>
                 </div>
+                {isActive && selectedOverlay && onUpdateText && onDeleteOverlay && (
+                    <FloatingTextToolbar
+                        selected={selectedOverlay}
+                        scale={scale}
+                        onUpdateText={onUpdateText}
+                        onDelete={onDeleteOverlay}
+                    />
+                )}
             </div>
         );
     }
 
     return (
-        <div
-            ref={containerRef}
-            className="relative aspect-square w-full overflow-hidden bg-background"
-            onClick={handleBackgroundClick}
-        >
-            {slide.baseImageUrl && (
-                <img
-                    src={slide.baseImageUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    draggable={false}
-                />
-            )}
-            {!slide.baseImageUrl && slide.imageStatus === "pending" && (
-                <div className="flex h-full w-full items-center justify-center bg-muted/50">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                </div>
-            )}
-            {sortedOverlays.map(el => (
-                <DraggableOverlay
-                    key={el.id}
-                    element={el}
-                    selected={el.id === slide.selectedOverlayId}
-                    containerRef={containerRef}
-                    scale={1}
-                    onSelect={id => onSelect(id)}
-                    onMove={onMove}
+        <div className="relative w-full">
+            <div
+                ref={containerRef}
+                className="relative aspect-square w-full overflow-hidden bg-background"
+                onClick={handleBackgroundClick}
+            >
+                {slide.baseImageUrl && (
+                    <img
+                        src={slide.baseImageUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        draggable={false}
+                    />
+                )}
+                {!slide.baseImageUrl && slide.imageStatus === "pending" && (
+                    <div className="flex h-full w-full items-center justify-center bg-muted/50">
+                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    </div>
+                )}
+                {sortedOverlays.map(el => (
+                    <DraggableOverlay
+                        key={el.id}
+                        element={el}
+                        selected={el.id === slide.selectedOverlayId}
+                        containerRef={containerRef}
+                        scale={scale}
+                        onSelect={id => onSelect(id)}
+                        onMove={onMove}
+                        onUpdateText={onUpdateText}
+                        onResize={onResize}
+                    />
+                ))}
+            </div>
+            {isActive && selectedOverlay && onUpdateText && onDeleteOverlay && (
+                <FloatingTextToolbar
+                    selected={selectedOverlay}
+                    scale={scale}
                     onUpdateText={onUpdateText}
-                    onResize={onResize}
+                    onDelete={onDeleteOverlay}
                 />
-            ))}
+            )}
         </div>
     );
 }

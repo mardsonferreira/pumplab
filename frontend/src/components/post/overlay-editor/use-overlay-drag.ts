@@ -26,6 +26,16 @@ export function useOverlayDrag({ onMove, onEnd, containerRef, elementWidth, elem
 
             const container = containerRef.current;
             if (!container) return;
+
+            const captureTarget = e.currentTarget;
+            if (captureTarget instanceof HTMLElement && e.pointerId != null) {
+                try {
+                    captureTarget.setPointerCapture(e.pointerId);
+                } catch {
+                    /* already captured or unsupported */
+                }
+            }
+
             const rect = container.getBoundingClientRect();
 
             // Offset between pointer and element top-left in container-relative coordinates
@@ -37,6 +47,7 @@ export function useOverlayDrag({ onMove, onEnd, containerRef, elementWidth, elem
 
             const handlePointerMove = (ev: PointerEvent) => {
                 if (!dragging.current || !container) return;
+                ev.preventDefault();
                 const r = container.getBoundingClientRect();
                 const s = r.width > 0 ? container.clientWidth / r.width : 1;
                 const rawX = (ev.clientX - r.left) * s - offset.current.x;
@@ -45,15 +56,24 @@ export function useOverlayDrag({ onMove, onEnd, containerRef, elementWidth, elem
                 onMove(clamped.x, clamped.y);
             };
 
-            const handlePointerUp = () => {
+            const endDrag = (ev: PointerEvent) => {
                 dragging.current = false;
+                if (captureTarget instanceof HTMLElement && ev.pointerId != null) {
+                    try {
+                        captureTarget.releasePointerCapture(ev.pointerId);
+                    } catch {
+                        /* noop */
+                    }
+                }
                 window.removeEventListener("pointermove", handlePointerMove);
-                window.removeEventListener("pointerup", handlePointerUp);
+                window.removeEventListener("pointerup", endDrag);
+                window.removeEventListener("pointercancel", endDrag);
                 onEnd?.();
             };
 
-            window.addEventListener("pointermove", handlePointerMove);
-            window.addEventListener("pointerup", handlePointerUp);
+            window.addEventListener("pointermove", handlePointerMove, { passive: false });
+            window.addEventListener("pointerup", endDrag);
+            window.addEventListener("pointercancel", endDrag);
         },
         [onMove, onEnd, containerRef, elementWidth, elementHeight],
     );

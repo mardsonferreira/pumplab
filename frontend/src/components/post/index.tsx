@@ -13,12 +13,11 @@ import { useGenerateCarousel } from "@/app/hooks/openai";
 import { exportCarouselPost } from "@/utils/api/openai/export-carousel-post";
 import { updateTotalPostsGenerated } from "@/utils/api/post-usage/update-total-posts-generated";
 import { OverlayCanvas } from "./overlay-editor/OverlayCanvas";
-import { FloatingTextToolbar } from "./overlay-editor/FloatingTextToolbar";
 import { flattenSlide } from "./overlay-editor/export/flatten-slide";
 import { overlayReducer } from "./overlay-editor/state";
 import { createTextOverlay } from "./overlay-editor/factories";
 import { computeTextFit } from "./overlay-editor/text-fit";
-import { canAddOverlay, SLIDE_WIDTH, SLIDE_HEIGHT } from "./overlay-editor/constants";
+import { canAddOverlay, defaultFontSizeForViewport, SLIDE_WIDTH, SLIDE_HEIGHT } from "./overlay-editor/constants";
 import type { CarouselSlide as CarouselSlideType, TextOverlay } from "@/types";
 
 export function Post() {
@@ -39,11 +38,6 @@ export function Post() {
     const activeSlideEdit = session
         ? session.slides[session.activeSlideIndex] ?? null
         : null;
-
-    const selectedElement = activeSlideEdit
-        ? activeSlideEdit.overlays.find(o => o.id === activeSlideEdit.selectedOverlayId) ?? null
-        : null;
-    const selectedText: TextOverlay | null = selectedElement;
 
     // --- Overlay actions ---
 
@@ -99,7 +93,7 @@ export function Post() {
     const handleAddText = useCallback(() => {
         if (!activeSlideEdit) return;
         const maxZ = activeSlideEdit.overlays.reduce((m, o) => Math.max(m, o.zIndex), 0);
-        const overlay = createTextOverlay("Novo texto", maxZ);
+        const overlay = createTextOverlay("Novo texto", maxZ, { fontSize: defaultFontSizeForViewport() });
         dispatchOverlay({ type: "ADD_OVERLAY", overlay });
         if (session) setSelectedOverlay(session.activeSlideIndex, overlay.id);
     }, [activeSlideEdit, dispatchOverlay, session, setSelectedOverlay]);
@@ -210,22 +204,17 @@ export function Post() {
                 <div className="relative w-full">
                     <OverlayCanvas
                         slide={slideEdit}
+                        isActive={isActiveSlide}
                         onSelect={handleSelectOverlay}
                         onMove={handleMove}
                         onUpdateText={handleUpdateText}
                         onResize={handleResize}
+                        onDeleteOverlay={handleDeleteOverlay}
                     />
-                    {isActiveSlide && selectedText && (
-                        <FloatingTextToolbar
-                            selected={selectedText}
-                            onUpdateText={handleUpdateText}
-                            onDelete={handleDeleteOverlay}
-                        />
-                    )}
                 </div>
             );
         },
-        [session, handleSelectOverlay, handleMove, handleResize, selectedText, handleUpdateText, handleDeleteOverlay],
+        [session, handleSelectOverlay, handleMove, handleResize, handleUpdateText, handleDeleteOverlay],
     );
 
     return (

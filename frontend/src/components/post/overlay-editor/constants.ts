@@ -1,15 +1,34 @@
 export const MAX_OVERLAYS_PER_SLIDE = 10;
 export const MIN_FONT_SIZE = 10;
-export const MAX_FONT_SIZE = 72;
+/** Upper bound for the toolbar and overlay text (logical slide pixels). */
+export const MAX_FONT_SIZE = 96;
 export const DEFAULT_FONT_SIZE = 24;
+/** Default font for new overlays on narrow viewports (typical phones). Logical slide pixels. */
+export const DEFAULT_FONT_SIZE_SMALL_SCREEN = 78;
+
+/** Viewport width at or below this uses `DEFAULT_FONT_SIZE_SMALL_SCREEN` for new overlays (Tailwind `sm` breakpoint). */
+export const SMALL_SCREEN_MAX_WIDTH_PX = 640;
+
+/**
+ * Font size for newly created overlays: larger on small screens so text stays readable when scaled down.
+ * Uses `DEFAULT_FONT_SIZE` when `window` is unavailable (SSR/tests).
+ */
+export function defaultFontSizeForViewport(): number {
+    if (typeof window === "undefined") return DEFAULT_FONT_SIZE;
+    return window.matchMedia(`(max-width: ${SMALL_SCREEN_MAX_WIDTH_PX}px)`).matches
+        ? DEFAULT_FONT_SIZE_SMALL_SCREEN
+        : DEFAULT_FONT_SIZE;
+}
 export const DEFAULT_LINE_HEIGHT = 1.3;
 export const DEFAULT_TEXT_COLOR = "#FFFFFF";
 
 export const SLIDE_WIDTH = 1024;
 export const SLIDE_HEIGHT = 1024;
 
-export const DEFAULT_TEXT_WIDTH = 300;
-export const DEFAULT_TEXT_HEIGHT = 80;
+/** New text overlays span the slide; positioned at the bottom in `createTextOverlay`. */
+export const DEFAULT_TEXT_WIDTH = SLIDE_WIDTH;
+/** Default strip height for bottom-aligned text (logical slide pixels). */
+export const DEFAULT_TEXT_HEIGHT = 220;
 
 /** Smallest box users can resize a text overlay to (logical slide pixels). */
 export const MIN_OVERLAY_WIDTH = 48;
