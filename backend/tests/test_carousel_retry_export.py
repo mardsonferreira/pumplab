@@ -1,5 +1,6 @@
 """Carousel partial retry and export ZIP: service and route behavior."""
 
+import base64
 import io
 import zipfile
 from unittest.mock import patch
@@ -60,5 +61,98 @@ def test_carousel_export_zip_structure():
                 for name in names:
                     if name.endswith(".png"):
                         assert zf.read(name) == fake_png
+    finally:
+        app.dependency_overrides.pop(get_current_user_id, None)
+
+
+def test_carousel_export_flattened_base64_takes_precedence():
+    """When flattened_image_base64 is present, it takes precedence over image_url."""
+    flattened_png = b"\x89PNG_FLAT"
+    flattened_b64 = base64.b64encode(flattened_png).decode()
+    url_png = b"\x89PNG_URL"
+
+    body = {
+        "caption": "Flattened test.",
+        "slides": [
+            {
+                "index": i,
+                "image_url": f"https://example.com/s{i}.png",
+                "text": f"Slide {i}",
+                "flattened_image_base64": flattened_b64,
+            }
+            for i in range(1, 6)
+        ],
+    }
+
+    app.dependency_overrides[get_current_user_id] = lambda: "test-user-id"
+    try:
+        with patch("app.api.routes.openai._fetch_image_bytes", side_effect=lambda u: url_png):
+            client = TestClient(app)
+            r = client.post("/openai/carousel-export", json=body)
+            assert r.status_code == 200
+            buf = io.BytesIO(r.content)
+            with zipfile.ZipFile(buf, "r") as zf:
+                # All slides should contain flattened data, not the URL-fetched data
+                for i in range(1, 6):
+                    content = zf.read(f"post/slide_{i:02d}.png")
+                    assert content == flattened_png
+    finally:
+        app.dependency_overrides.pop(get_current_user_id, None)
+
+
+def test_carousel_export_mixed_flattened_and_url():
+    """Slides with flattened data use base64; others fall back to image_url fetch."""
+    flattened_png = b"\x89PNG_FLAT"
+    flattened_b64 = base64.b64encode(flattened_png).decode()
+    url_png = b"\x89PNG_URL"
+
+    slides = []
+    for i in range(1, 6):
+        slide = {"index": i, "image_url": f"https://example.com/s{i}.png", "text": f"S{i}"}
+        if i <= 2:
+            slide["flattened_image_base64"] = flattened_b64
+        slides.append(slide)
+
+    body = {"caption": "Mixed test.", "slides": slides}
+
+    app.dependency_overrides[get_current_user_id] = lambda: "test-user-id"
+    try:
+        with patch("app.api.routes.openai._fetch_image_bytes", side_effect=lambda u: url_png):
+            client = TestClient(app)
+            r = client.post("/openai/carousel-export", json=body)
+            assert r.status_code == 200
+            buf = io.BytesIO(r.content)
+            with zipfile.ZipFile(buf, "r") as zf:
+                assert zf.read("post/slide_01.png") == flattened_png
+                assert zf.read("post/slide_02.png") == flattened_png
+                assert zf.read("post/slide_03.png") == url_png
+                assert zf.read("post/slide_04.png") == url_png
+                assert zf.read("post/slide_05.png") == url_png
+    finally:
+        app.dependency_overrides.pop(get_current_user_id, None)
+
+
+def test_carousel_export_invalid_base64_returns_400():
+    """Invalid base64 in flattened_image_base64 should return 400."""
+    body = {
+        "caption": "Bad base64.",
+        "slides": [
+            {
+                "index": i,
+                "image_url": f"https://example.com/s{i}.png",
+                "text": f"S{i}",
+                "flattened_image_base64": "!!!not-valid-base64!!!" if i == 1 else None,
+            }
+            for i in range(1, 6)
+        ],
+    }
+
+    app.dependency_overrides[get_current_user_id] = lambda: "test-user-id"
+    try:
+        with patch("app.api.routes.openai._fetch_image_bytes", side_effect=lambda u: b"\x89PNG"):
+            client = TestClient(app)
+            r = client.post("/openai/carousel-export", json=body)
+            assert r.status_code == 400
+            assert "invalid" in r.json()["error"].lower()
     finally:
         app.dependency_overrides.pop(get_current_user_id, None)

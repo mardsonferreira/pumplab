@@ -47,8 +47,9 @@ class CarouselImagesResponse(BaseModel):
 
 class CarouselExportSlide(BaseModel):
     index: int = Field(..., ge=1, le=5)
-    image_url: str
-    text: str
+    image_url: str = ""
+    text: str = ""
+    flattened_image_base64: str | None = None
 
 
 class CarouselExportRequest(BaseModel):

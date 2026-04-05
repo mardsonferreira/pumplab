@@ -1,3 +1,4 @@
+import base64
 import io
 import zipfile
 from datetime import datetime, timezone
@@ -79,20 +80,30 @@ def post_carousel_export(
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             for i, slide in enumerate(slides_sorted, start=1):
-                if not slide.image_url or not slide.image_url.strip():
+                # Flattened base64 takes precedence (WYSIWYG export with overlays)
+                if slide.flattened_image_base64 and slide.flattened_image_base64.strip():
+                    try:
+                        raw = base64.b64decode(slide.flattened_image_base64)
+                    except Exception:
+                        return JSONResponse(
+                            status_code=400,
+                            content={"error": f"Slide {i} has invalid flattened_image_base64"},
+                        )
+                elif slide.image_url and slide.image_url.strip():
+                    try:
+                        raw = _fetch_image_bytes(slide.image_url)
+                    except Exception as e:
+                        return JSONResponse(
+                            status_code=502,
+                            content={
+                                "error": "Failed to fetch one or more images; try again or regenerate the slide.",
+                                "detail": str(e),
+                            },
+                        )
+                else:
                     return JSONResponse(
                         status_code=400,
-                        content={"error": f"Slide {i} has no image_url"},
-                    )
-                try:
-                    raw = _fetch_image_bytes(slide.image_url)
-                except Exception as e:
-                    return JSONResponse(
-                        status_code=502,
-                        content={
-                            "error": "Failed to fetch one or more images; try again or regenerate the slide.",
-                            "detail": str(e),
-                        },
+                        content={"error": f"Slide {i} has no image_url or flattened_image_base64"},
                     )
                 zf.writestr(f"post/slide_{i:02d}.png", raw)
             zf.writestr(

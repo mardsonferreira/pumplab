@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
-import { FiArrowLeft, FiDownload, FiHeart, FiRefreshCw } from "react-icons/fi";
+import { FiArrowLeft, FiDownload, FiHeart, FiRefreshCw, FiPlus } from "react-icons/fi";
 import { FaRegComment } from "react-icons/fa";
 
 import { Carousel } from "@/components/common/carousel";
@@ -12,9 +12,26 @@ import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { useGenerateCarousel } from "@/app/hooks/openai";
 import { exportCarouselPost } from "@/utils/api/openai/export-carousel-post";
 import { updateTotalPostsGenerated } from "@/utils/api/post-usage/update-total-posts-generated";
+import {
+    OverlayCanvas,
+    flattenSlide,
+    overlayReducer,
+    createTextOverlay,
+    computeTextFit,
+    canAddOverlay,
+    defaultFontSizeForViewport,
+    SLIDE_WIDTH,
+    SLIDE_HEIGHT,
+} from "./overlay-editor";
+import type { CarouselSlide as CarouselSlideType, TextOverlay } from "@/types";
 
 export function Post() {
-    const { postPreview } = useNarrativeStore();
+    const {
+        postPreview,
+        setActiveSlide,
+        updateSlideOverlays,
+        setSelectedOverlay,
+    } = useNarrativeStore();
     const { retryFailedSlides, retrying, error } = useGenerateCarousel();
     const [exportError, setExportError] = useState<string | null>(null);
     const [exporting, setExporting] = useState(false);
@@ -22,17 +39,124 @@ export function Post() {
     const hasFailedSlides =
         postPreview?.slides?.some(s => s.status === "failed") ?? false;
 
+    const session = postPreview?.overlaySession;
+    const activeSlideEdit = session
+        ? session.slides[session.activeSlideIndex] ?? null
+        : null;
+
+    // --- Overlay actions ---
+
+    const handleSlideChange = useCallback(
+        (index: number) => setActiveSlide(index),
+        [setActiveSlide],
+    );
+
+    const dispatchOverlay = useCallback(
+        (action: Parameters<typeof overlayReducer>[1]) => {
+            if (!activeSlideEdit || !session) return;
+            const next = overlayReducer(activeSlideEdit.overlays, action);
+            updateSlideOverlays(session.activeSlideIndex, next);
+        },
+        [activeSlideEdit, session, updateSlideOverlays],
+    );
+
+    const handleSelectOverlay = useCallback(
+        (id: string | null) => {
+            if (!session) return;
+            setSelectedOverlay(session.activeSlideIndex, id);
+        },
+        [session, setSelectedOverlay],
+    );
+
+    const handleMove = useCallback(
+        (id: string, x: number, y: number) => {
+            dispatchOverlay({ type: "MOVE", id, x, y, containerW: SLIDE_WIDTH, containerH: SLIDE_HEIGHT });
+        },
+        [dispatchOverlay],
+    );
+
+    const handleResize = useCallback(
+        (id: string, x: number, y: number, width: number, height: number) => {
+            const el = activeSlideEdit?.overlays.find(o => o.id === id);
+            if (!el) return;
+            const { overflow } = computeTextFit(el.text, el.fontSize, width, height, el.lineHeight);
+            dispatchOverlay({
+                type: "RESIZE",
+                id,
+                x,
+                y,
+                width,
+                height,
+                overflow,
+                containerW: SLIDE_WIDTH,
+                containerH: SLIDE_HEIGHT,
+            });
+        },
+        [dispatchOverlay, activeSlideEdit],
+    );
+
+    const handleAddText = useCallback(() => {
+        if (!activeSlideEdit) return;
+        const maxZ = activeSlideEdit.overlays.reduce((m, o) => Math.max(m, o.zIndex), 0);
+        const overlay = createTextOverlay("Novo texto", maxZ, { fontSize: defaultFontSizeForViewport() });
+        dispatchOverlay({ type: "ADD_OVERLAY", overlay });
+        if (session) setSelectedOverlay(session.activeSlideIndex, overlay.id);
+    }, [activeSlideEdit, dispatchOverlay, session, setSelectedOverlay]);
+
+    const handleDeleteOverlay = useCallback(
+        (id: string) => {
+            dispatchOverlay({ type: "DELETE_OVERLAY", id });
+            handleSelectOverlay(null);
+        },
+        [dispatchOverlay, handleSelectOverlay],
+    );
+
+    const handleUpdateText = useCallback(
+        (id: string, patch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color">>) => {
+            let fullPatch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color" | "overflow">> = { ...patch };
+            if (patch.text !== undefined || patch.fontSize !== undefined) {
+                const el = activeSlideEdit?.overlays.find(o => o.id === id);
+                if (el) {
+                    const text = patch.text ?? el.text;
+                    const fontSize = patch.fontSize ?? el.fontSize;
+                    const { overflow } = computeTextFit(text, fontSize, el.width, el.height, el.lineHeight);
+                    fullPatch = { ...fullPatch, overflow };
+                }
+            }
+            dispatchOverlay({ type: "UPDATE_TEXT", id, patch: fullPatch });
+        },
+        [dispatchOverlay, activeSlideEdit],
+    );
+
+    // --- Export ---
+
     const handleDownloadPost = useCallback(async () => {
         if (!postPreview?.caption || !postPreview?.slides?.length) return;
         setExportError(null);
         setExporting(true);
         try {
+            // Flatten overlays onto each slide image for WYSIWYG export
+            const flattenedMap: Record<number, string> = {};
+            if (session) {
+                for (const s of postPreview.slides) {
+                    const slideEdit = session.slides[s.index];
+                    if (slideEdit && slideEdit.overlays.length > 0) {
+                        try {
+                            flattenedMap[s.index] = await flattenSlide(slideEdit);
+                        } catch {
+                            // Fallback to image_url if flattening fails
+                        }
+                    }
+                }
+            }
+
             const blob = await exportCarouselPost(
                 postPreview.caption,
                 postPreview.slides.map(s => ({
                     index: s.index,
                     image_url: s.image_url,
                     text: s.text,
+                    flattened_image_base64: flattenedMap[s.index],
                 })),
             );
             const url = URL.createObjectURL(blob);
@@ -63,19 +187,48 @@ export function Post() {
         } finally {
             setExporting(false);
         }
-    }, [postPreview]);
+    }, [postPreview, session, router]);
+
+    // --- Render ---
 
     const caption = postPreview?.caption ?? "";
     const slides = postPreview?.slides ?? undefined;
     const readyToDownload = postPreview?.ready_to_download ?? false;
+
+    /**
+     * Renders the overlay canvas for each slide inside the carousel.
+     * The floating toolbar is a sibling of the canvas (not inside overflow-hidden),
+     * so it can render outside the canvas bounds without being clipped.
+     */
+    const renderSlide = useCallback(
+        (slide: CarouselSlideType, _idx: number) => {
+            const slideEdit = session?.slides[slide.index];
+            if (!slideEdit) return null;
+            const isActiveSlide = session?.activeSlideIndex === slide.index;
+            return (
+                <div className="relative w-full">
+                    <OverlayCanvas
+                        slide={slideEdit}
+                        isActive={isActiveSlide}
+                        onSelect={handleSelectOverlay}
+                        onMove={handleMove}
+                        onUpdateText={handleUpdateText}
+                        onResize={handleResize}
+                        onDeleteOverlay={handleDeleteOverlay}
+                    />
+                </div>
+            );
+        },
+        [session, handleSelectOverlay, handleMove, handleResize, handleUpdateText, handleDeleteOverlay],
+    );
 
     return (
         <div className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
             <div className="container mx-auto max-w-2xl">
                 <Link href="/narrative/edit" className="text-primary mb-8 inline-flex items-center">
                     <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
-                            <FiArrowLeft size={16} />
-                        </span>
+                        <FiArrowLeft size={16} />
+                    </span>
                     Voltar
                 </Link>
 
@@ -87,8 +240,36 @@ export function Post() {
 
                 <div className="bg-foreground/5 border-foreground/10 overflow-hidden rounded-md border shadow-2xl backdrop-blur-sm">
                     <div className="bg-background">
-                        <Carousel slides={slides} />
+                        {session ? (
+                            <Carousel
+                                slides={slides}
+                                onSlideChange={handleSlideChange}
+                                renderSlide={renderSlide}
+                            />
+                        ) : (
+                            <Carousel slides={slides} />
+                        )}
                     </div>
+
+                    {/* Add text button — bottom-left, just below the carousel */}
+                    {activeSlideEdit && (
+                        <div className="border-t border-foreground/10 bg-background px-4 py-2">
+                            <button
+                                type="button"
+                                disabled={!canAddOverlay(activeSlideEdit.overlays.length)}
+                                onClick={handleAddText}
+                                title={
+                                    canAddOverlay(activeSlideEdit.overlays.length)
+                                        ? "Adicionar caixa de texto"
+                                        : "Limite de 10 elementos atingido"
+                                }
+                                className="inline-flex items-center gap-1.5 rounded px-2 py-1.5 text-sm text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-40"
+                            >
+                                <FiPlus size={16} />
+                                Adicionar texto
+                            </button>
+                        </div>
+                    )}
 
                     <div className="space-y-6 px-4 py-6 sm:px-6">
                         <div className="space-y-3">
