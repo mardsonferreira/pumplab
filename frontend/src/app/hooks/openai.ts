@@ -8,8 +8,7 @@ import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { generateNarratives } from "@/utils/api/openai/generate-narratives";
 import { generateCarouselMasterPrompt } from "@/utils/api/openai/generate-carousel-master-prompt";
 import { generateCarouselImages } from "@/utils/api/openai/generate-carousel-images";
-import { createTextOverlay } from "@/components/post/overlay-editor/factories";
-import { defaultFontSizeForViewport } from "@/components/post/overlay-editor/constants";
+import { createTextOverlay, defaultFontSizeForViewport } from "@/components/post/overlay-editor";
 
 import { narrativePrompt, carouselMasterPrompt, buildCarouselPromptFromDraft } from "./prompt";
 

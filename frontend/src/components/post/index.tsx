@@ -12,12 +12,17 @@ import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { useGenerateCarousel } from "@/app/hooks/openai";
 import { exportCarouselPost } from "@/utils/api/openai/export-carousel-post";
 import { updateTotalPostsGenerated } from "@/utils/api/post-usage/update-total-posts-generated";
-import { OverlayCanvas } from "./overlay-editor/OverlayCanvas";
-import { flattenSlide } from "./overlay-editor/export/flatten-slide";
-import { overlayReducer } from "./overlay-editor/state";
-import { createTextOverlay } from "./overlay-editor/factories";
-import { computeTextFit } from "./overlay-editor/text-fit";
-import { canAddOverlay, defaultFontSizeForViewport, SLIDE_WIDTH, SLIDE_HEIGHT } from "./overlay-editor/constants";
+import {
+    OverlayCanvas,
+    flattenSlide,
+    overlayReducer,
+    createTextOverlay,
+    computeTextFit,
+    canAddOverlay,
+    defaultFontSizeForViewport,
+    SLIDE_WIDTH,
+    SLIDE_HEIGHT,
+} from "./overlay-editor";
 import type { CarouselSlide as CarouselSlideType, TextOverlay } from "@/types";
 
 export function Post() {

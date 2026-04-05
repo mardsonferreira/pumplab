@@ -1,20 +1,13 @@
 import { useCallback, useRef } from "react";
-import { clampBounds } from "./constants";
-
-interface UseDragOptions {
-    onMove: (x: number, y: number) => void;
-    onEnd?: () => void;
-    containerRef: React.RefObject<HTMLElement | null>;
-    elementWidth: number;
-    elementHeight: number;
-}
+import { clampBounds } from "@/components/post/overlay-editor/constants";
+import type { UseOverlayDragOptions } from "./types";
 
 /**
  * Returns a `onPointerDown` handler that starts a drag session.
  * Coordinates are normalized to the overlay coordinate space (matching
  * the container size) so the caller receives clamped pixel positions.
  */
-export function useOverlayDrag({ onMove, onEnd, containerRef, elementWidth, elementHeight }: UseDragOptions) {
+export function useOverlayDrag({ onMove, onEnd, containerRef, elementWidth, elementHeight }: UseOverlayDragOptions) {
     const dragging = useRef(false);
     const offset = useRef({ x: 0, y: 0 });
 

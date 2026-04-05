@@ -1,11 +1,6 @@
 import { useCallback, useRef } from "react";
-import { applyResizeFromHandle, type ResizeHandleId } from "./resize-geometry";
-
-interface UseOverlayResizeOptions {
-    onResize: (x: number, y: number, width: number, height: number) => void;
-    containerRef: React.RefObject<HTMLElement | null>;
-    scale: number;
-}
+import { applyResizeFromHandle, type ResizeHandleId } from "@/components/post/overlay-editor/resize-geometry";
+import type { UseOverlayResizeOptions } from "./types";
 
 function pointerDeltaInContainerSpace(
     container: HTMLElement,

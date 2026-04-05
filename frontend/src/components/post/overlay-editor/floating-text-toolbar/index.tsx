@@ -1,35 +1,21 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { FiTrash2 } from "react-icons/fi";
-import type { TextOverlay } from "@/types";
-import { MIN_FONT_SIZE, MAX_FONT_SIZE } from "./constants";
+import { MIN_FONT_SIZE, MAX_FONT_SIZE } from "@/components/post/overlay-editor/constants";
+import type { FloatingTextToolbarProps } from "./types";
 
 /** Single controls row + padding/borders; used to place the toolbar above or below the overlay. */
 const TOOLBAR_HEIGHT_ESTIMATE = 40;
 const TOOLBAR_OFFSET = 6;
 
-interface FloatingTextToolbarProps {
-    selected: TextOverlay;
-    /** Multiply logical slide coordinates (1024×1024 space) to match the on-screen canvas. */
-    scale?: number;
-    onUpdateText: (id: string, patch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color">>) => void;
-    onDelete: (id: string) => void;
-}
-
-export function FloatingTextToolbar({
-    selected,
-    scale = 1,
-    onUpdateText,
-    onDelete,
-}: FloatingTextToolbarProps) {
+export function FloatingTextToolbar({ selected, scale = 1, onUpdateText, onDelete }: FloatingTextToolbarProps) {
     const yPx = selected.y * scale;
     const xPx = selected.x * scale;
     const hPx = selected.height * scale;
     const showAbove = yPx >= TOOLBAR_HEIGHT_ESTIMATE + TOOLBAR_OFFSET;
-    const top = showAbove
-        ? yPx - TOOLBAR_HEIGHT_ESTIMATE - TOOLBAR_OFFSET
-        : yPx + hPx + TOOLBAR_OFFSET;
+    const topPx = showAbove ? yPx - TOOLBAR_HEIGHT_ESTIMATE - TOOLBAR_OFFSET : yPx + hPx + TOOLBAR_OFFSET;
 
     /** Local string so the user can clear the field and type a new value; parent stores a clamped number. */
     const [fontSizeDraft, setFontSizeDraft] = useState(() => String(selected.fontSize));
@@ -63,23 +49,22 @@ export function FloatingTextToolbar({
         [selected.id, onUpdateText],
     );
 
+    const positionStyle = {
+        "--ft-top": `${topPx}px`,
+        "--ft-left": `${Math.max(0, xPx)}px`,
+    } as CSSProperties;
+
     return (
         <div
-            style={{
-                position: "absolute",
-                top,
-                left: Math.max(0, xPx),
-                zIndex: 1000,
-                minWidth: 220,
-                maxWidth: "calc(100% - 4px)",
-            }}
+            className="absolute z-[1000] min-w-[220px] max-w-[calc(100%-4px)] [left:max(0px,var(--ft-left))] [top:var(--ft-top)]"
+            style={positionStyle}
             onPointerDown={e => e.stopPropagation()}
             onClick={e => e.stopPropagation()}
         >
             <div className="rounded-lg border border-zinc-500 bg-zinc-950 text-zinc-50 shadow-2xl ring-2 ring-black/40">
                 <div className="flex items-center gap-1.5 px-2.5 py-2">
                     <label className="flex items-center gap-1.5 text-xs text-zinc-200" title="Tamanho da fonte">
-                        <span className="font-semibold select-none">Aa</span>
+                        <span className="select-none font-semibold">Aa</span>
                         <input
                             type="text"
                             inputMode="numeric"
