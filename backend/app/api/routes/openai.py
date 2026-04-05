@@ -13,16 +13,14 @@ from app.schemas import (
     CarouselExportRequest,
     CarouselImagesRequest,
     CarouselImagesResponse,
+    CarouselMasterNarrativeBody,
     CarouselMasterResponse,
 )
 from app.services import openai_service
+from app.services.carousel_master_template import build_carousel_master_user_message
 from app.services.narrative_template import NarrativeThemeValidationError, build_narrative_prompt
 
 router = APIRouter()
-
-
-class PromptBody(BaseModel):
-    prompt: str
 
 
 class NarrativesThemeBody(BaseModel):
@@ -47,9 +45,12 @@ def post_narratives(body: NarrativesThemeBody, user_id: str = Depends(get_curren
 
 
 @router.post("/carousel-master-prompt", response_model=CarouselMasterResponse)
-def post_carousel_master_prompt(body: PromptBody, user_id: str = Depends(get_current_user_id)):
+def post_carousel_master_prompt(
+    body: CarouselMasterNarrativeBody, user_id: str = Depends(get_current_user_id)
+):
     try:
-        return openai_service.generate_carousel_master_prompt(body.prompt)
+        full = build_carousel_master_user_message(body)
+        return openai_service.generate_carousel_master_prompt(full)
     except ValueError as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
     except Exception:

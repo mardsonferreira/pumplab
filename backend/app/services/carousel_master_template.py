@@ -1,19 +1,13 @@
-import type { NarrativeDraft } from "@/types";
+"""Server-side carousel master LLM template. User content is only the structured narrative payload."""
 
-/** Builds the narrative summary for the carousel master prompt (theme, thesis, argument, ordered sequence). */
-export function buildCarouselPromptFromDraft(draft: NarrativeDraft): string {
-    const draftWithTheme = draft as NarrativeDraft & { theme?: string };
-    return JSON.stringify({
-        ...(typeof draftWithTheme.theme === "string"
-            ? { theme: draftWithTheme.theme }
-            : {}),
-        central_thesis: draft.centralThesis,
-        main_argument: draft.mainArgument,
-        narrative_sequence: draft.narrativeSequence,
-    });
-}
+from __future__ import annotations
 
-export const carouselMasterPrompt = `
+import json
+
+from app.schemas.carousel import CarouselMasterNarrativeBody
+
+# Parity with former `carouselMasterPrompt` in frontend/src/app/hooks/prompt.ts.
+CAROUSEL_MASTER_TEMPLATE = """
     You are a senior content strategist and visual prompt engineer.
 
     Input:
@@ -57,7 +51,7 @@ export const carouselMasterPrompt = `
     * Do not include line breaks
     * Include a non-empty caption field in Brazilian Portuguese
     * Do NOT include explanations, markdown, or additional text
-    * Do NOT include newline characters ('\n') in the output
+    * Do NOT include newline characters ('\\n') in the output
 
     JSON format:
     {
@@ -74,4 +68,17 @@ export const carouselMasterPrompt = `
             }
         ]
     }
-`;
+"""
+
+
+def build_carousel_master_user_message(body: CarouselMasterNarrativeBody) -> str:
+    """Serialize validated narrative to JSON and substitute into the master template."""
+    payload: dict = {
+        "central_thesis": body.central_thesis,
+        "main_argument": body.main_argument,
+        "narrative_sequence": [s.model_dump() for s in body.narrative_sequence],
+    }
+    if body.theme is not None:
+        payload["theme"] = body.theme
+    narrative_str = json.dumps(payload, ensure_ascii=False)
+    return CAROUSEL_MASTER_TEMPLATE.replace("{{NARRATIVE}}", narrative_str)
