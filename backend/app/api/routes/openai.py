@@ -4,9 +4,9 @@ import zipfile
 from datetime import datetime, timezone
 from urllib.request import urlopen
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.api.deps import get_current_user_id
 from app.schemas import (
@@ -16,6 +16,7 @@ from app.schemas import (
     CarouselMasterResponse,
 )
 from app.services import openai_service
+from app.services.narrative_template import NarrativeThemeValidationError, build_narrative_prompt
 
 router = APIRouter()
 
@@ -24,10 +25,19 @@ class PromptBody(BaseModel):
     prompt: str
 
 
+class NarrativesThemeBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    theme: str
+
+
 @router.post("/narratives")
-def post_narratives(body: PromptBody, user_id: str = Depends(get_current_user_id)):
+def post_narratives(body: NarrativesThemeBody, user_id: str = Depends(get_current_user_id)):
     try:
-        raw = openai_service.generate_narratives(body.prompt)
+        full = build_narrative_prompt(body.theme)
+    except NarrativeThemeValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    try:
+        raw = openai_service.generate_narratives(full)
         narratives = openai_service.parse_narrative_content(raw)
         return JSONResponse(content={"narratives": narratives})
     except ValueError as e:

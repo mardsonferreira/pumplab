@@ -10,7 +10,7 @@ import { generateCarouselMasterPrompt } from "@/utils/api/openai/generate-carous
 import { generateCarouselImages } from "@/utils/api/openai/generate-carousel-images";
 import { createTextOverlay, defaultFontSizeForViewport } from "@/components/post/overlay-editor";
 
-import { narrativePrompt, carouselMasterPrompt, buildCarouselPromptFromDraft } from "./prompt";
+import { carouselMasterPrompt, buildCarouselPromptFromDraft } from "./prompt";
 
 /** Build the initial overlay session from generated slides so each slide starts with one text overlay. */
 function buildInitialOverlaySession(slides: CarouselSlide[]): OverlaySessionState {
@@ -61,8 +61,7 @@ export function useGenerateNarrative() {
         setNarratives([]);
         setError(null);
         try {
-            const prompt = narrativePrompt.replace("{{THEME}}", inputText);
-            const list = await generateNarratives(prompt);
+            const list = await generateNarratives(inputText.trim());
             setNarratives(list);
         } catch (err) {
             console.error(err);
