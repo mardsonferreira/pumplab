@@ -65,61 +65,72 @@ body {
     }
 }
 
-.slick-prev:before,
-.slick-next:before {
-    color: var(--foreground);
-    font-size: 20px;
-    opacity: 0.8;
+/*
+ * slick-theme.css is bundled after globals.css in Next, so base slick selectors can
+ * override our defaults. Scope to .slider-container + !important for key properties.
+ */
+.slider-container .slick-list {
+    isolation: isolate;
 }
 
-.slick-prev:hover:before,
-.slick-next:hover:before {
-    opacity: 1;
+.slider-container .slick-prev,
+.slider-container .slick-next {
+    z-index: 1001 !important;
 }
 
-.slick-prev {
-    left: 10px;
-    z-index: 10;
+.slider-container .slick-prev {
+    left: 10px !important;
 }
 
-.slick-next {
-    right: 10px;
-    z-index: 10;
+.slider-container .slick-next {
+    right: 10px !important;
 }
 
-.slick-dots {
-    bottom: 12px;
+.slider-container .slick-prev:before,
+.slider-container .slick-next:before {
+    color: var(--foreground) !important;
+    font-size: 20px !important;
+    opacity: 0.8 !important;
 }
 
-/* Keep post carousel dots below content to avoid caption overlap. */
+.slider-container .slick-prev:hover:before,
+.slider-container .slick-next:hover:before,
+.slider-container .slick-prev:focus:before,
+.slider-container .slick-next:focus:before {
+    opacity: 1 !important;
+}
+
+/* Keep post carousel dots below content and visible on dark background. */
 .slider-container .slick-dots {
-    position: static;
-    bottom: auto;
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    z-index: 2;
     margin-top: 0.75rem;
 }
 
-.slick-dots li {
+.slider-container .slick-dots li {
     width: 6px;
     height: 6px;
     margin: 0 3px;
 }
 
-.slick-dots li button {
+.slider-container .slick-dots li button {
     width: 6px;
     height: 6px;
     padding: 0;
 }
 
-.slick-dots li button:before {
-    color: rgba(255, 255, 255, 0.5);
-    opacity: 0.5;
-    font-size: 8px;
+.slider-container .slick-dots li button:before {
+    color: rgba(255, 255, 255, 0.5) !important;
+    opacity: 0.5 !important;
+    font-size: 8px !important;
     width: 6px;
     height: 6px;
     line-height: 6px;
 }
 
-.slick-dots li.slick-active button:before {
-    opacity: 1;
-    color: var(--primary);
+.slider-container .slick-dots li.slick-active button:before {
+    opacity: 1 !important;
+    color: var(--primary) !important;
 }

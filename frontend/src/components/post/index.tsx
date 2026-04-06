@@ -229,7 +229,7 @@ export function Post() {
                     </h3>
                 </div>
 
-                <div className="bg-foreground/5 border-foreground/10 overflow-hidden rounded-md border shadow-2xl backdrop-blur-sm">
+                <div className="bg-foreground/5 overflow-hidden rounded-md shadow-2xl backdrop-blur-sm">
                     <div className="bg-background">
                         {session ? (
                             <Carousel
@@ -244,7 +244,7 @@ export function Post() {
 
                     {/* Add text button — bottom-left, just below the carousel */}
                     {activeSlideEdit && (
-                        <div className="border-t border-foreground/10 bg-background px-4 py-2">
+                        <div className="bg-background px-1 py-2">
                             <button
                                 type="button"
                                 disabled={!canAddOverlay(activeSlideEdit.overlays.length)}
@@ -262,7 +262,7 @@ export function Post() {
                         </div>
                     )}
 
-                    <div className="space-y-6 px-4 py-6 sm:px-6">
+                    <div className="space-y-6 px-1 py-6 sm:px-6">
                         <div className="space-y-3">
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-1 text-sm font-semibold uppercase text-primary">
@@ -290,40 +290,40 @@ export function Post() {
                             </p>
                         )}
 
-                        <div className="border-foreground/10 border-t" />
-
-                        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                            {hasFailedSlides && (
-                                <Button
-                                    variant="outline"
-                                    type="button"
-                                    className="w-full px-6 py-3 sm:w-auto"
-                                    onClick={retryFailedSlides}
-                                    disabled={retrying}
-                                >
-                                    <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
-                                        <FiRefreshCw
-                                            size={16}
-                                            className={retrying ? "animate-spin" : ""}
-                                        />
-                                    </span>
-                                    Tentar novamente (slides com falha)
-                                </Button>
-                            )}
-                            <Button
-                                variant="primary"
-                                type="button"
-                                className="w-full px-8 py-4 text-base shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl sm:w-auto disabled:opacity-50 disabled:pointer-events-none"
-                                onClick={handleDownloadPost}
-                                disabled={!readyToDownload || exporting}
-                            >
-                                <span className="mr-2 inline-flex h-5 w-5 items-center justify-center">
-                                    <FiDownload size={20} />
-                                </span>
-                                {exporting ? "Preparando download…" : "Baixar Post"}
-                            </Button>
-                        </div>
+                       
                     </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2 mt-6">
+                    {hasFailedSlides && (
+                        <Button
+                            variant="outline"
+                            type="button"
+                            className="w-full px-6 py-3 sm:w-auto"
+                            onClick={retryFailedSlides}
+                            disabled={retrying}
+                        >
+                            <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
+                                <FiRefreshCw
+                                    size={16}
+                                    className={retrying ? "animate-spin" : ""}
+                                />
+                            </span>
+                            Tentar novamente (slides com falha)
+                        </Button>
+                    )}
+                    <Button
+                        variant="primary"
+                        type="button"
+                        className="w-full px-8 py-4 text-base shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl sm:w-auto disabled:opacity-50 disabled:pointer-events-none"
+                        onClick={handleDownloadPost}
+                        disabled={!readyToDownload || exporting}
+                    >
+                        <span className="mr-2 inline-flex h-5 w-5 items-center justify-center">
+                            <FiDownload size={20} />
+                        </span>
+                        {exporting ? "Preparando download…" : "Baixar Post"}
+                    </Button>
                 </div>
 
                 <div className="mt-6 text-center">
