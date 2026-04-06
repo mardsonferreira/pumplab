@@ -9,11 +9,14 @@ import { useGenerateNarrative } from "@/app/hooks/openai";
 import { NarrativeCard } from "@/components/dashboard/NarrativeCard";
 import { Suggestions } from "@/components/dashboard/Suggestions";
 import { WaveLoading } from "@/components/common/wave";
+import { getMonthlyNarrativesRemaining } from "@/utils/api/post-usage/get-monthly-narratives-remaining";
+import { httpUtil } from "@/utils/common/http/client";
 
 export default function Dashboard() {
     const searchParams = useSearchParams();
     const [input, setInput] = useState("");
     const [showCheckoutSuccess, setShowCheckoutSuccess] = useState(false);
+    const [monthlyNarrativesRemaining, setMonthlyNarrativesRemaining] = useState<number | null>(null);
 
     useEffect(() => {
         if (searchParams.get("checkout") === "success") {
@@ -21,21 +24,37 @@ export default function Dashboard() {
             window.history.replaceState({}, "", "/dashboard");
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+
+        getMonthlyNarrativesRemaining(httpUtil, year, month)
+            .then(remaining => setMonthlyNarrativesRemaining(remaining))
+            .catch(() => setMonthlyNarrativesRemaining(0));
+    }, []);
+
     const { generateNarrative, generating, narratives, error } = useGenerateNarrative();
+    const hasNarrativesRemaining = (monthlyNarrativesRemaining ?? 0) > 0;
+    const isCheckingUsage = monthlyNarrativesRemaining === null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim()) return;
+        if (isCheckingUsage || !hasNarrativesRemaining) return;
 
         generateNarrative(input);
     };
 
     const handleSuggestionClick = (suggestion: string) => {
+        if (isCheckingUsage || !hasNarrativesRemaining) return;
         setInput(suggestion);
         generateNarrative(suggestion);
     };
 
     const handleLoadMore = () => {
+        if (isCheckingUsage || !hasNarrativesRemaining) return;
         generateNarrative(input);
     };
 
@@ -50,6 +69,11 @@ export default function Dashboard() {
                 <div className="mb-6 rounded-lg border border-error/50 bg-error/10 px-4 py-3 text-center text-sm text-error" role="alert">
                     {error}
                     <span className="ml-2">Tente novamente abaixo.</span>
+                </div>
+            )}
+            {!isCheckingUsage && !hasNarrativesRemaining && (
+                <div className="mb-6 rounded-lg border border-error/50 bg-error/10 px-4 py-3 text-center text-sm text-error" role="alert">
+                    Você atingiu o limite mensal de narrativas do seu plano. Aguarde a renovacao ou faça upgrade para continuar.
                 </div>
             )}
             <div className="mb-8 flex flex-col items-center justify-center gap-2">
@@ -80,7 +104,7 @@ export default function Dashboard() {
                     />
                     <button
                         type="submit"
-                        disabled={!input.trim() || generating}
+                        disabled={!input.trim() || generating || !hasNarrativesRemaining || isCheckingUsage}
                         className={cn(
                             "absolute bottom-4 right-3 rounded-md p-2 transition-colors",
                             "disabled:cursor-not-allowed disabled:opacity-50",
@@ -120,7 +144,10 @@ export default function Dashboard() {
                 {!narratives.length && (
                     <div className="mt-4 flex flex-col gap-2">
                         <span>Não sabe por onde começar? Experimente uma das sugestões abaixo:</span>
-                        <Suggestions disabled={generating} onClick={handleSuggestionClick} />
+                        <Suggestions
+                            disabled={generating || !hasNarrativesRemaining || isCheckingUsage}
+                            onClick={handleSuggestionClick}
+                        />
                     </div>
                 )}
             </form>
@@ -138,7 +165,7 @@ export default function Dashboard() {
 
                         <button
                             onClick={handleLoadMore}
-                            disabled={generating}
+                            disabled={generating || !hasNarrativesRemaining || isCheckingUsage}
                             className={cn(
                                 "rounded-lg border-2 border-dashed border-neutral-800 p-6",
                                 "hover:border-primary/50 bg-neutral-900/30 hover:bg-neutral-900/50",

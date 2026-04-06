@@ -1,4 +1,16 @@
-export const narrativePrompt = `
+"""Server-side narrative generation template. User input is only substituted at {{THEME}}."""
+
+from __future__ import annotations
+
+NARRATIVE_THEME_MAX_LENGTH = 2000
+
+
+class NarrativeThemeValidationError(ValueError):
+    """Raised when theme fails trim/length validation before building the LLM prompt."""
+
+
+# Parity with former frontend `narrativePrompt` (frontend/src/app/hooks/prompt.ts).
+NARRATIVE_TEMPLATE = """
 You are a senior content strategist specialized in fitness, physical education, and life improvement.
 
 Your task is to generate content production narratives designed specifically for Instagram (Reels or Carousel posts) aimed at people interested in self-development and healthy habits.
@@ -110,84 +122,16 @@ Each narrative MUST strictly follow the defined structure.
 
 Do NOT include explanations, markdown, or additional text.
 
-Do NOT include newline characters ('\n') in the output.
+Do NOT include newline characters ('\\n') in the output.
 
-`;
+"""
 
-import type { NarrativeDraft } from "@/types";
 
-/** Builds the narrative summary for the carousel master prompt (theme, thesis, argument, ordered sequence). */
-export function buildCarouselPromptFromDraft(draft: NarrativeDraft): string {
-    const draftWithTheme = draft as NarrativeDraft & { theme?: string };
-    return JSON.stringify({
-        ...(typeof draftWithTheme.theme === "string"
-            ? { theme: draftWithTheme.theme }
-            : {}),
-        central_thesis: draft.central_thesis,
-        main_argument: draft.main_argument,
-        narrative_sequence: draft.narrative_sequence,
-    });
-}
-
-export const carouselMasterPrompt = `
-    You are a senior content strategist and visual prompt engineer.
-
-    Input:
-    Narrative: '{{NARRATIVE}}'
-    ==========================
-
-    Your task:
-    Generate an Instagram carousel with exactly 5 slides based on the provided narrative.
-    Preserve the narrative theme and the order of steps (1 to 5) in every slide.
-
-    The narrative consists of:
-
-    * Theme (if present)
-    * Central Thesis
-    * Main Argument
-    * Narrative Sequence (5 steps, in order)
-
-    Color palette: dark tones, black, gray, orange accents
-    Visual style: cinematic, realistic, high-contrast lighting
-
-    Rules:
-
-    * Slide 1: image representing the central thesis (use role "central_thesis")
-    * Slide 2: image representing the main argument (use role "argument")
-    * Slides 3 to 5: narrative sequence (use role "sequence" for 3–4, "cta" for slide 5)
-    * Each slide must contain:
-    * short, impactful text (max. 12 words) — this text will be overlaid by the user later, NOT rendered inside the image
-    * an image_prompt that visually represents the message
-    * CRITICAL: image_prompts must describe ONLY the visual scene and composition. Do NOT include any text, words, letters, numbers, captions, titles, labels, or typography in the generated images. The images must be purely visual with no readable text content.
-    * image_prompts must be:
-    * cinematic
-    * realistic
-    * focused on fitness mindset
-    * suitable for Instagram
-    * visually consistent with each other
-    * designed as background images that work well with text overlaid on top
-    * Do not use emojis
-    * All generated text must be in Brazilian Portuguese only
-    * Do not include any English words, expressions, or structures in the generated content
-    * Return ONLY valid JSON
-    * Do not include line breaks
-    * Include a non-empty caption field in Brazilian Portuguese
-    * Do NOT include explanations, markdown, or additional text
-    * Do NOT include newline characters ('\n') in the output
-
-    JSON format:
-    {
-        "style": {
-                "color_palette": "",
-                "visual_style": ""
-            },
-        "caption": "",
-        "slides": [
-            {
-                "role": "central_thesis | argument | sequence | cta",
-                "text": "",
-                "image_prompt": ""
-            }
-        ]
-    }
-`;
+def build_narrative_prompt(theme: str) -> str:
+    """Build the full user message for narrative generation. Validates theme length and non-empty after strip."""
+    t = (theme or "").strip()
+    if not t:
+        raise NarrativeThemeValidationError("Theme is required.")
+    if len(t) > NARRATIVE_THEME_MAX_LENGTH:
+        raise NarrativeThemeValidationError("Theme is too long.")
+    return NARRATIVE_TEMPLATE.replace("{{THEME}}", t)

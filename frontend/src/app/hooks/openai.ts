@@ -10,8 +10,6 @@ import { generateCarouselMasterPrompt } from "@/utils/api/openai/generate-carous
 import { generateCarouselImages } from "@/utils/api/openai/generate-carousel-images";
 import { createTextOverlay, defaultFontSizeForViewport } from "@/components/post/overlay-editor";
 
-import { narrativePrompt, carouselMasterPrompt, buildCarouselPromptFromDraft } from "./prompt";
-
 /** Build the initial overlay session from generated slides so each slide starts with one text overlay. */
 function buildInitialOverlaySession(slides: CarouselSlide[]): OverlaySessionState {
     const sessionSlides: Record<number, CarouselSlideEditState> = {};
@@ -61,8 +59,7 @@ export function useGenerateNarrative() {
         setNarratives([]);
         setError(null);
         try {
-            const prompt = narrativePrompt.replace("{{THEME}}", inputText);
-            const list = await generateNarratives(prompt);
+            const list = await generateNarratives(inputText.trim());
             setNarratives(list);
         } catch (err) {
             console.error(err);
@@ -93,11 +90,12 @@ export function useGenerateCarousel() {
             setGenerating(true);
             setError(null);
             try {
-                const promptText = carouselMasterPrompt.replace(
-                    "{{NARRATIVE}}",
-                    buildCarouselPromptFromDraft(narrative),
-                );
-                const master = await generateCarouselMasterPrompt(promptText);
+                const master = await generateCarouselMasterPrompt({
+                    theme: narrative.theme,
+                    centralThesis: narrative.centralThesis,
+                    mainArgument: narrative.mainArgument,
+                    narrativeSequence: narrative.narrativeSequence,
+                });
                 if (!master?.slides || master.slides.length !== 5 || !master.caption?.trim()) {
                     setError("Resposta do carrossel inválida. Tente novamente.");
                     return false;

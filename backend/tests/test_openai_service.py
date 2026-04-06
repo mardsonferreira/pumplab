@@ -125,6 +125,5 @@ def test_generate_carousel_images_combines_style_role_text_and_scene(monkeypatch
     prompt = captured["prompt"]
     assert "Visual style (apply to entire image): dark tones, orange accents, cinematic." in prompt
     assert "Narrative role for this slide: central_thesis." in prompt
-    assert "Overlay text content (Brazilian Portuguese): Disciplina diaria cria resultados." in prompt
-    assert "Typography: bold and highly readable text overlay" in prompt
+    assert "CRITICAL: Do NOT include any text" in prompt
     assert "Scene: Pessoa treinando ao amanhecer" in prompt

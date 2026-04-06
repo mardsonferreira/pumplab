@@ -8,5 +8,8 @@
     "build:frontend": "pnpm --filter frontend build",
     "start:frontend": "pnpm --filter frontend start",
     "lint:frontend": "pnpm --filter frontend lint"
+  },
+  "dependencies": {
+    "react-hot-toast": "^2.6.0"
   }
 }

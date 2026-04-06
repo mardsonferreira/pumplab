@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FiImage, FiFileText, FiList } from "react-icons/fi";
 import { FaQuoteLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { toast } from  "react-hot-toast";
 
 import { Textarea } from "@/components/common/textarea";
 import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { useGenerateCarousel } from "@/app/hooks/openai";
 import { WaveLoading } from "@/components/common/wave";
 import { useMobile } from "@/app/hooks/use-mobile";
+import { updateTotalPostsGenerated } from "@/utils/api/post-usage/update-total-posts-generated";
 
 function validateDraft(narrative: { centralThesis?: string; mainArgument?: string; narrativeSequence?: { description?: string }[] }): string | null {
     if (!narrative.centralThesis?.trim()) return "Tese central é obrigatória.";
@@ -66,8 +68,20 @@ export default function EditNarrative() {
             return;
         }
         setFieldError(null);
-        const success = await generateCarousel(narrative);
-        if (success) router.push("/post");
+        const currentDate = new Date();
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth() + 1;
+        try {
+            await generateCarousel(narrative);
+            await updateTotalPostsGenerated(year, month, 1);
+        } catch (err) {
+            const errorMessage = "Não foi possível gerar o carrossel. Por favor, tente novamente. Se o problema persistir, entre em contato com o suporte.";
+            setFieldError(errorMessage);
+            toast.error(errorMessage);
+            return;
+        }
+        router.push("/post");
+        router.refresh();
     };
 
     return (

@@ -5,9 +5,9 @@ type GenerateNarrativesResponse = {
     narratives: Narrative[];
 };
 
-export async function generateNarratives(prompt: string): Promise<Narrative[]> {
+export async function generateNarratives(theme: string): Promise<Narrative[]> {
     const response = await httpUtil.post<GenerateNarrativesResponse>("/openai/narratives", {
-        body: { prompt },
+        body: { theme },
     });
     return response.narratives ?? [];
 }

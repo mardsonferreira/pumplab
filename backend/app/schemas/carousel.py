@@ -1,8 +1,10 @@
 """Pydantic schemas for carousel payloads (master prompt, images, export)."""
 
+from __future__ import annotations
+
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class CarouselMasterStyle(BaseModel):
@@ -20,6 +22,74 @@ class CarouselMasterResponse(BaseModel):
     style: CarouselMasterStyle = Field(default_factory=CarouselMasterStyle)
     caption: str = ""
     slides: list[CarouselMasterSlide] = Field(..., min_length=5, max_length=5)
+
+
+class NarrativeSequenceStepInput(BaseModel):
+    """One step in the editable narrative (matches frontend narrative sequence shape)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    step: int = Field(..., ge=1, le=5)
+    title: str = Field(..., max_length=500)
+    description: str = Field(..., max_length=4000)
+
+    @field_validator("title", "description", mode="before")
+    @classmethod
+    def strip_required_strings(cls, v: object) -> object:
+        if isinstance(v, str):
+            s = v.strip()
+            if not s:
+                raise ValueError("must not be empty")
+            return s
+        return v
+
+
+class CarouselMasterNarrativeBody(BaseModel):
+    """Structured narrative for server-side carousel master prompt (no client-supplied prompt string)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    theme: str | None = None
+    central_thesis: str = Field(..., max_length=8000)
+    main_argument: str = Field(..., max_length=12000)
+    narrative_sequence: list[NarrativeSequenceStepInput] = Field(..., min_length=5, max_length=5)
+
+    @field_validator("theme", mode="before")
+    @classmethod
+    def normalize_theme(cls, v: object) -> str | None:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            s = v.strip()
+            if not s:
+                return None
+            return s
+        return v
+
+    @field_validator("theme")
+    @classmethod
+    def theme_max_len(cls, v: str | None) -> str | None:
+        if v is not None and len(v) > 2000:
+            raise ValueError("Theme is too long.")
+        return v
+
+    @field_validator("central_thesis", "main_argument", mode="before")
+    @classmethod
+    def strip_required_narrative_fields(cls, v: object) -> object:
+        if isinstance(v, str):
+            s = v.strip()
+            if not s:
+                raise ValueError("must not be empty")
+            return s
+        return v
+
+    @model_validator(mode="after")
+    def narrative_steps_are_one_through_five(self) -> CarouselMasterNarrativeBody:
+        seq = self.narrative_sequence
+        steps_sorted = sorted(s.step for s in seq)
+        if steps_sorted != [1, 2, 3, 4, 5]:
+            raise ValueError("narrative_sequence must contain steps 1 through 5 exactly once")
+        return self
 
 
 class CarouselImagesSlideInput(BaseModel):
