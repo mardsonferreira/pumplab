@@ -65,9 +65,6 @@ CAROUSEL_MASTER_SYSTEM = (
 
 
 def generate_carousel_master_prompt(prompt: str) -> CarouselMasterResponse:
-    if get_settings().USE_MOCK_LLM:
-        return CarouselMasterResponse.model_validate_json(MOCK_CAROUSEL_MASTER_JSON)
-
     # Enforce schema at generation time with OpenAI Structured Outputs to avoid brittle
     # string parsing and keep runtime payloads aligned with our Pydantic contract.
     client = _client()

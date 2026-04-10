@@ -1,5 +1,5 @@
 import type { CarouselSlideEditState, TextOverlay } from "@/types";
-import { SLIDE_WIDTH, SLIDE_HEIGHT } from "../constants";
+import { OVERLAY_TEXT_FONT_FAMILY, SLIDE_WIDTH, SLIDE_HEIGHT } from "../constants";
 import { wrapText } from "../text-fit";
 
 /**
@@ -41,7 +41,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 function drawText(ctx: CanvasRenderingContext2D, el: TextOverlay) {
     ctx.save();
-    ctx.font = `${el.fontSize}px sans-serif`;
+    ctx.font = `${el.fontSize}px ${OVERLAY_TEXT_FONT_FAMILY}`;
     ctx.fillStyle = el.color;
     ctx.textBaseline = "top";
 

@@ -25,8 +25,8 @@ CAROUSEL_MASTER_TEMPLATE = """
     * Main Argument
     * Narrative Sequence (5 steps, in order)
 
-    Color palette: dark tones, black, gray, orange accents
-    Visual style: cinematic, realistic, high-contrast lighting
+    Color palette: warm neutrals, soft natural tones, clean whites and creams, balanced saturation—typical of a cohesive Instagram feed
+    Visual style: lifestyle photography, natural daylight or soft golden-hour light, shallow depth of field, authentic smartphone or mirrorless look, polished but not overly cinematic
 
     Rules:
 
@@ -35,13 +35,14 @@ CAROUSEL_MASTER_TEMPLATE = """
     * Slides 3 to 5: narrative sequence (use role "sequence" for 3–4, "cta" for slide 5)
     * Each slide must contain:
     * short, impactful text (max. 12 words) — this text will be overlaid by the user later, NOT rendered inside the image
-    * an image_prompt that visually represents the message
+    * an image_prompt that visually represents the slide’s message in the fitness world (training, gym, athletic lifestyle, recovery, performance—always tied to what that slide is about)
+    * CRITICAL for image_prompt: the scene must be unmistakably for a fitness audience—people who train and consume health/fitness content should immediately recognize the niche. Use settings, subjects, wardrobe, and props that belong to that world; avoid generic lifestyle shots that could be about anything.
     * CRITICAL: image_prompts must describe ONLY the visual scene and composition. Do NOT include any text, words, letters, numbers, captions, titles, labels, or typography in the generated images. The images must be purely visual with no readable text content.
     * image_prompts must be:
-    * cinematic
+    * natural, polished Instagram-style photography (not movie-poster cinematic)
     * realistic
-    * focused on fitness mindset
-    * suitable for Instagram
+    * clearly anchored in fitness / athletic culture and aligned with the slide’s specific idea (not vague “wellness” stock imagery)
+    * suitable for Instagram fitness creators and their audience
     * visually consistent with each other
     * designed as background images that work well with text overlaid on top
     * Do not use emojis

@@ -1,5 +1,5 @@
 import type { OverflowStatus } from "@/types";
-import { MIN_FONT_SIZE } from "./constants";
+import { MIN_FONT_SIZE, OVERLAY_TEXT_FONT_FAMILY } from "./constants";
 
 export interface TextFitResult {
     fontSize: number;
@@ -22,7 +22,7 @@ export function computeTextFit(
     boxWidth: number,
     boxHeight: number,
     lineHeight: number,
-    fontFamily = "sans-serif",
+    fontFamily = OVERLAY_TEXT_FONT_FAMILY,
 ): TextFitResult {
     if (typeof document === "undefined") {
         return { fontSize: requestedFontSize, overflow: "none" };
