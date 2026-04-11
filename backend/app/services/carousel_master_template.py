@@ -50,7 +50,8 @@ CAROUSEL_MASTER_TEMPLATE = """
     * Do not include any English words, expressions, or structures in the generated content
     * Return ONLY valid JSON
     * Do not include line breaks
-    * Include a non-empty caption field in Brazilian Portuguese
+    * Caption (field "caption"): write a substantive post caption, not a slogan or one-liner. It must read as a short essay ("redação") in continuous prose, built strictly from the narrative input—use central_thesis, main_argument, and the five steps of narrative_sequence (titles and descriptions) as the sole substantive basis. Structure it in three parts, in this order: (1) Introdução — apresente a tese central de forma clara e objetiva; (2) Desenvolvimento — argumente de modo coerente, integrando a sequência narrativa sem repetir literalmente cada slide; avance a ideia com parágrafos lógicos; (3) Conclusão — feche com uma proposta de intervenção ou encaminhamento prático (o que o leitor pode fazer ou como aplicar o que foi defendido). Prioritize objectivity: defend one clear point of view; avoid filler, unnecessary repetition, and information that does not serve the argument. Aim for roughly 120 to 350 words total (adjust if the narrative is very dense or sparse). The caption must be non-empty and substantially longer than a typical social one-liner.
+    * Separate logical parts of the caption with a period and space (or " — " between major sections if needed); do not rely on line breaks inside the caption string.
     * Do NOT include explanations, markdown, or additional text
     * Do NOT include newline characters ('\\n') in the output
 
