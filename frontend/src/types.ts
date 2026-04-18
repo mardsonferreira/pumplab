@@ -40,8 +40,6 @@ export type PostPreview = {
     last_generation_at?: string;
     /** Global style from master for image retries. */
     style?: { color_palette: string; visual_style: string };
-    /** Per-slide overlay editing session (in-memory only, discarded on refresh). */
-    overlaySession?: OverlaySessionState;
 };
 
 /** Shape after `httpUtil` camelCases the API JSON (snake_case in wire format). */

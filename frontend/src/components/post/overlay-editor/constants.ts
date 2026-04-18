@@ -21,6 +21,12 @@ export function defaultFontSizeForViewport(): number {
 }
 export const DEFAULT_LINE_HEIGHT = 1.3;
 export const DEFAULT_TEXT_COLOR = "#FFFFFF";
+/**
+ * Instagram-like sans stack for overlays:
+ * prefers modern native fonts and falls back to common web-safe sans-serif fonts.
+ */
+export const OVERLAY_TEXT_FONT_FAMILY =
+    '"Helvetica Neue", "Avenir Next", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
 
 export const SLIDE_WIDTH = 1024;
 export const SLIDE_HEIGHT = 1024;

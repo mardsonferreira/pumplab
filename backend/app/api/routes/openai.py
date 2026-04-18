@@ -117,6 +117,10 @@ def post_carousel_export(
                         content={"error": f"Slide {i} has no image_url or flattened_image_base64"},
                     )
                 zf.writestr(f"post/slide_{i:02d}.png", raw)
+                zf.writestr(
+                    f"post/slide_{i:02d}.txt",
+                    (slide.text or "").encode("utf-8"),
+                )
             zf.writestr(
                 "post/caption.txt",
                 (body.caption or "").encode("utf-8"),

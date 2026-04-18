@@ -1,13 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 
-import type {
-    Narrative,
-    PostPreview,
-    OverlaySessionState,
-    TextOverlay,
-    CarouselSlideEditState,
-} from "@/types";
+import type { Narrative, PostPreview } from "@/types";
 
 interface NarrativeStore {
     narrative: Narrative | null;
@@ -16,12 +10,8 @@ interface NarrativeStore {
     setPostPreview: (preview: PostPreview | null) => void;
     clearPostPreview: () => void;
 
-    // Overlay session helpers
-    initOverlaySession: (session: OverlaySessionState) => void;
-    setActiveSlide: (index: number) => void;
-    updateSlideOverlays: (slideIndex: number, overlays: TextOverlay[]) => void;
-    setSelectedOverlay: (slideIndex: number, overlayId: string | null) => void;
-    getActiveSlideEdit: () => CarouselSlideEditState | null;
+    /** Updates AI slide copy for one slide (1-based index). */
+    updateSlideText: (slideIndex: number, text: string) => void;
 }
 
 const INITIAL_STATE = {
@@ -40,77 +30,26 @@ export const useNarrativeStore = create<NarrativeStore>()(
                 clearPostPreview: () => set({ postPreview: null }),
                 reset: () => set(INITIAL_STATE),
 
-                initOverlaySession: (session: OverlaySessionState) => {
+                updateSlideText: (slideIndex: number, text: string) => {
                     const pp = get().postPreview;
-                    if (!pp) return;
-                    set({ postPreview: { ...pp, overlaySession: session } });
-                },
-
-                setActiveSlide: (index: number) => {
-                    const pp = get().postPreview;
-                    if (!pp?.overlaySession) return;
+                    if (!pp?.slides?.length) return;
                     set({
                         postPreview: {
                             ...pp,
-                            overlaySession: { ...pp.overlaySession, activeSlideIndex: index },
+                            slides: pp.slides.map(s =>
+                                s.index === slideIndex ? { ...s, text } : s,
+                            ),
                         },
                     });
-                },
-
-                updateSlideOverlays: (slideIndex: number, overlays: TextOverlay[]) => {
-                    const pp = get().postPreview;
-                    if (!pp?.overlaySession) return;
-                    const prev = pp.overlaySession.slides[slideIndex];
-                    if (!prev) return;
-                    set({
-                        postPreview: {
-                            ...pp,
-                            overlaySession: {
-                                ...pp.overlaySession,
-                                slides: {
-                                    ...pp.overlaySession.slides,
-                                    [slideIndex]: { ...prev, overlays },
-                                },
-                            },
-                        },
-                    });
-                },
-
-                setSelectedOverlay: (slideIndex: number, overlayId: string | null) => {
-                    const pp = get().postPreview;
-                    if (!pp?.overlaySession) return;
-                    const prev = pp.overlaySession.slides[slideIndex];
-                    if (!prev) return;
-                    set({
-                        postPreview: {
-                            ...pp,
-                            overlaySession: {
-                                ...pp.overlaySession,
-                                slides: {
-                                    ...pp.overlaySession.slides,
-                                    [slideIndex]: { ...prev, selectedOverlayId: overlayId },
-                                },
-                            },
-                        },
-                    });
-                },
-
-                getActiveSlideEdit: () => {
-                    const pp = get().postPreview;
-                    if (!pp?.overlaySession) return null;
-                    return pp.overlaySession.slides[pp.overlaySession.activeSlideIndex] ?? null;
                 },
             }),
             {
                 name: "dashboard-narrative",
                 storage: createJSONStorage(() => localStorage),
                 skipHydration: false,
-                // Exclude overlaySession from persistence — session-scoped only
                 partialize: (state) => ({
                     narrative: state.narrative,
-                    postPreview: state.postPreview
-                        ? { ...state.postPreview, overlaySession: undefined }
-                        : null,
+                    postPreview: state.postPreview,
                 }),
             },
         ),

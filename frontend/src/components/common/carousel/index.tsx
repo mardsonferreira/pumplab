@@ -78,7 +78,7 @@ export function Carousel({ slides, onSlideChange, renderSlide }: CarouselProps) 
     );
 
     const settings = {
-        dots: true,
+        dots: false,
         fade: true,
         infinite: !!slides?.length,
         speed: 500,

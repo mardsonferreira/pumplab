@@ -26,7 +26,7 @@ def test_carousel_images_partial_retry_returns_one_url_per_requested_slide():
 
 
 def test_carousel_export_zip_structure():
-    """Export returns ZIP with post/slide_01.png .. post/slide_05.png and post/caption.txt."""
+    """Export returns ZIP with PNGs, per-slide .txt, and post/caption.txt."""
     fake_png = b"\x89PNG\r\n\x1a\n"
     body = {
         "caption": "Test caption.",
@@ -52,12 +52,19 @@ def test_carousel_export_zip_structure():
                 assert names == [
                     "post/caption.txt",
                     "post/slide_01.png",
+                    "post/slide_01.txt",
                     "post/slide_02.png",
+                    "post/slide_02.txt",
                     "post/slide_03.png",
+                    "post/slide_03.txt",
                     "post/slide_04.png",
+                    "post/slide_04.txt",
                     "post/slide_05.png",
+                    "post/slide_05.txt",
                 ]
                 assert zf.read("post/caption.txt").decode("utf-8") == "Test caption."
+                for i in range(1, 6):
+                    assert zf.read(f"post/slide_{i:02d}.txt").decode("utf-8") == f"Slide {i}"
                 for name in names:
                     if name.endswith(".png"):
                         assert zf.read(name) == fake_png

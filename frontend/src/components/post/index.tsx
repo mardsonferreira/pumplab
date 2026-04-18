@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
-import { FiArrowLeft, FiDownload, FiHeart, FiRefreshCw, FiPlus } from "react-icons/fi";
+import { FiArrowLeft, FiDownload, FiHeart, FiRefreshCw } from "react-icons/fi";
 import { FaRegComment } from "react-icons/fa";
 
 import { Carousel } from "@/components/common/carousel";
@@ -11,26 +11,111 @@ import { Button } from "@/components/ui/Button";
 import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { useGenerateCarousel } from "@/app/hooks/openai";
 import { exportCarouselPost } from "@/utils/api/openai/export-carousel-post";
-import {
-    OverlayCanvas,
-    flattenSlide,
-    overlayReducer,
-    createTextOverlay,
-    computeTextFit,
-    canAddOverlay,
-    defaultFontSizeForViewport,
-    SLIDE_WIDTH,
-    SLIDE_HEIGHT,
-} from "./overlay-editor";
-import type { CarouselSlide as CarouselSlideType, TextOverlay } from "@/types";
+import { cn } from "@/utils/cn";
+import type { CarouselSlide as CarouselSlideType } from "@/types";
+
+const SLIDE_COUNT = 5;
+
+function SlideWithEditableText({
+    slide,
+    onTextChange,
+}: {
+    slide: CarouselSlideType;
+    onTextChange: (slideIndex: number, text: string) => void;
+}) {
+    const textBlock = (
+        <div
+            className={cn(
+                "border-t border-white/[0.06] bg-gradient-to-b from-background via-background to-slate-800/25",
+                "pb-4 pt-5 sm:px-5",
+            )}
+        >
+            <div className="mb-3 flex items-center justify-end">
+                <span
+                    className="shrink-0 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-primary"
+                    aria-hidden
+                >
+                    {slide.index}/{SLIDE_COUNT}
+                </span>
+            </div>
+            <label htmlFor={`slide-text-${slide.index}`} className="sr-only">
+                Editar texto do slide {slide.index}
+            </label>
+            <div
+                className={cn(
+                    "overflow-hidden rounded-2xl border border-neutral-800/90",
+                    "bg-slate-900/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]",
+                    "ring-1 ring-white/[0.05] transition-[box-shadow,border-color] duration-200",
+                    "focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/35",
+                )}
+            >
+                <textarea
+                    id={`slide-text-${slide.index}`}
+                    value={slide.text}
+                    onChange={e => onTextChange(slide.index, e.target.value)}
+                    rows={4}
+                    spellCheck
+                    className={cn(
+                        "min-h-[6.25rem] w-full resize-y border-0 bg-transparent",
+                        "px-4 py-3.5 text-[15px] leading-[1.55] text-foreground antialiased",
+                        "placeholder:text-neutral-500",
+                        "focus:outline-none",
+                    )}
+                    placeholder="Edite o texto gerado para este slide…"
+                />
+            </div>
+        </div>
+    );
+
+    if (slide.status === "pending") {
+        return (
+            <div className="flex w-full flex-col">
+                <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 bg-muted/50 p-4">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <p className="text-center text-sm text-muted-foreground">Gerando imagem…</p>
+                </div>
+                {textBlock}
+            </div>
+        );
+    }
+
+    if (slide.status === "failed") {
+        return (
+            <div className="flex w-full flex-col">
+                <div className="flex aspect-square w-full flex-col items-center justify-center gap-3 bg-destructive/10 p-4">
+                    <p className="text-center text-sm font-medium text-destructive">
+                        {slide.error_message ?? "Falha ao gerar imagem."}
+                    </p>
+                </div>
+                {textBlock}
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex w-full flex-col">
+            <div className="aspect-square w-full overflow-hidden bg-background">
+                {slide.image_url ? (
+                    <img
+                        src={slide.image_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        draggable={false}
+                    />
+                ) : (
+                    <div className="flex h-full items-center justify-center bg-muted/50 text-sm text-muted-foreground">
+                        Sem imagem
+                    </div>
+                )}
+            </div>
+            {textBlock}
+        </div>
+    );
+}
 
 export function Post() {
-    const {
-        postPreview,
-        setActiveSlide,
-        updateSlideOverlays,
-        setSelectedOverlay,
-    } = useNarrativeStore();
+    const { postPreview, updateSlideText } = useNarrativeStore();
     const { retryFailedSlides, retrying, error } = useGenerateCarousel();
     const [exportError, setExportError] = useState<string | null>(null);
     const [exporting, setExporting] = useState(false);
@@ -38,124 +123,24 @@ export function Post() {
     const hasFailedSlides =
         postPreview?.slides?.some(s => s.status === "failed") ?? false;
 
-    const session = postPreview?.overlaySession;
-    const activeSlideEdit = session
-        ? session.slides[session.activeSlideIndex] ?? null
-        : null;
-
-    // --- Overlay actions ---
-
-    const handleSlideChange = useCallback(
-        (index: number) => setActiveSlide(index),
-        [setActiveSlide],
-    );
-
-    const dispatchOverlay = useCallback(
-        (action: Parameters<typeof overlayReducer>[1]) => {
-            if (!activeSlideEdit || !session) return;
-            const next = overlayReducer(activeSlideEdit.overlays, action);
-            updateSlideOverlays(session.activeSlideIndex, next);
+    const handleTextChange = useCallback(
+        (slideIndex: number, text: string) => {
+            updateSlideText(slideIndex, text);
         },
-        [activeSlideEdit, session, updateSlideOverlays],
+        [updateSlideText],
     );
-
-    const handleSelectOverlay = useCallback(
-        (id: string | null) => {
-            if (!session) return;
-            setSelectedOverlay(session.activeSlideIndex, id);
-        },
-        [session, setSelectedOverlay],
-    );
-
-    const handleMove = useCallback(
-        (id: string, x: number, y: number) => {
-            dispatchOverlay({ type: "MOVE", id, x, y, containerW: SLIDE_WIDTH, containerH: SLIDE_HEIGHT });
-        },
-        [dispatchOverlay],
-    );
-
-    const handleResize = useCallback(
-        (id: string, x: number, y: number, width: number, height: number) => {
-            const el = activeSlideEdit?.overlays.find(o => o.id === id);
-            if (!el) return;
-            const { overflow } = computeTextFit(el.text, el.fontSize, width, height, el.lineHeight);
-            dispatchOverlay({
-                type: "RESIZE",
-                id,
-                x,
-                y,
-                width,
-                height,
-                overflow,
-                containerW: SLIDE_WIDTH,
-                containerH: SLIDE_HEIGHT,
-            });
-        },
-        [dispatchOverlay, activeSlideEdit],
-    );
-
-    const handleAddText = useCallback(() => {
-        if (!activeSlideEdit) return;
-        const maxZ = activeSlideEdit.overlays.reduce((m, o) => Math.max(m, o.zIndex), 0);
-        const overlay = createTextOverlay("Novo texto", maxZ, { fontSize: defaultFontSizeForViewport() });
-        dispatchOverlay({ type: "ADD_OVERLAY", overlay });
-        if (session) setSelectedOverlay(session.activeSlideIndex, overlay.id);
-    }, [activeSlideEdit, dispatchOverlay, session, setSelectedOverlay]);
-
-    const handleDeleteOverlay = useCallback(
-        (id: string) => {
-            dispatchOverlay({ type: "DELETE_OVERLAY", id });
-            handleSelectOverlay(null);
-        },
-        [dispatchOverlay, handleSelectOverlay],
-    );
-
-    const handleUpdateText = useCallback(
-        (id: string, patch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color">>) => {
-            let fullPatch: Partial<Pick<TextOverlay, "text" | "fontSize" | "color" | "overflow">> = { ...patch };
-            if (patch.text !== undefined || patch.fontSize !== undefined) {
-                const el = activeSlideEdit?.overlays.find(o => o.id === id);
-                if (el) {
-                    const text = patch.text ?? el.text;
-                    const fontSize = patch.fontSize ?? el.fontSize;
-                    const { overflow } = computeTextFit(text, fontSize, el.width, el.height, el.lineHeight);
-                    fullPatch = { ...fullPatch, overflow };
-                }
-            }
-            dispatchOverlay({ type: "UPDATE_TEXT", id, patch: fullPatch });
-        },
-        [dispatchOverlay, activeSlideEdit],
-    );
-
-    // --- Export ---
 
     const handleDownloadPost = useCallback(async () => {
         if (!postPreview?.caption || !postPreview?.slides?.length) return;
         setExportError(null);
         setExporting(true);
         try {
-            // Flatten overlays onto each slide image for WYSIWYG export
-            const flattenedMap: Record<number, string> = {};
-            if (session) {
-                for (const s of postPreview.slides) {
-                    const slideEdit = session.slides[s.index];
-                    if (slideEdit && slideEdit.overlays.length > 0) {
-                        try {
-                            flattenedMap[s.index] = await flattenSlide(slideEdit);
-                        } catch {
-                            // Fallback to image_url if flattening fails
-                        }
-                    }
-                }
-            }
-
             const blob = await exportCarouselPost(
                 postPreview.caption,
                 postPreview.slides.map(s => ({
                     index: s.index,
                     image_url: s.image_url,
                     text: s.text,
-                    flattened_image_base64: flattenedMap[s.index],
                 })),
             );
             const url = URL.createObjectURL(blob);
@@ -178,39 +163,17 @@ export function Post() {
         } finally {
             setExporting(false);
         }
-    }, [postPreview, session, router]);
-
-    // --- Render ---
+    }, [postPreview, router]);
 
     const caption = postPreview?.caption ?? "";
     const slides = postPreview?.slides ?? undefined;
     const readyToDownload = postPreview?.ready_to_download ?? false;
 
-    /**
-     * Renders the overlay canvas for each slide inside the carousel.
-     * The floating toolbar is a sibling of the canvas (not inside overflow-hidden),
-     * so it can render outside the canvas bounds without being clipped.
-     */
     const renderSlide = useCallback(
-        (slide: CarouselSlideType, _idx: number) => {
-            const slideEdit = session?.slides[slide.index];
-            if (!slideEdit) return null;
-            const isActiveSlide = session?.activeSlideIndex === slide.index;
-            return (
-                <div className="relative w-full">
-                    <OverlayCanvas
-                        slide={slideEdit}
-                        isActive={isActiveSlide}
-                        onSelect={handleSelectOverlay}
-                        onMove={handleMove}
-                        onUpdateText={handleUpdateText}
-                        onResize={handleResize}
-                        onDeleteOverlay={handleDeleteOverlay}
-                    />
-                </div>
-            );
-        },
-        [session, handleSelectOverlay, handleMove, handleResize, handleUpdateText, handleDeleteOverlay],
+        (slide: CarouselSlideType) => (
+            <SlideWithEditableText slide={slide} onTextChange={handleTextChange} />
+        ),
+        [handleTextChange],
     );
 
     return (
@@ -231,36 +194,12 @@ export function Post() {
 
                 <div className="bg-foreground/5 overflow-hidden rounded-md shadow-2xl backdrop-blur-sm">
                     <div className="bg-background">
-                        {session ? (
-                            <Carousel
-                                slides={slides}
-                                onSlideChange={handleSlideChange}
-                                renderSlide={renderSlide}
-                            />
+                        {slides?.length === 5 ? (
+                            <Carousel slides={slides} renderSlide={renderSlide} />
                         ) : (
                             <Carousel slides={slides} />
                         )}
                     </div>
-
-                    {/* Add text button — bottom-left, just below the carousel */}
-                    {activeSlideEdit && (
-                        <div className="bg-background px-1 py-2">
-                            <button
-                                type="button"
-                                disabled={!canAddOverlay(activeSlideEdit.overlays.length)}
-                                onClick={handleAddText}
-                                title={
-                                    canAddOverlay(activeSlideEdit.overlays.length)
-                                        ? "Adicionar caixa de texto"
-                                        : "Limite de 10 elementos atingido"
-                                }
-                                className="inline-flex items-center gap-1.5 rounded px-2 py-1.5 text-sm text-primary hover:bg-primary/10 disabled:pointer-events-none disabled:opacity-40"
-                            >
-                                <FiPlus size={16} />
-                                Adicionar texto
-                            </button>
-                        </div>
-                    )}
 
                     <div className="space-y-6 px-1 py-6 sm:px-6">
                         <div className="space-y-3">
@@ -289,12 +228,10 @@ export function Post() {
                                 {exportError ?? error}
                             </p>
                         )}
-
-                       
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-center gap-3 pt-2 mt-6">
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-3 pt-2">
                     {hasFailedSlides && (
                         <Button
                             variant="outline"
@@ -315,7 +252,7 @@ export function Post() {
                     <Button
                         variant="primary"
                         type="button"
-                        className="w-full px-8 py-4 text-base shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl sm:w-auto disabled:opacity-50 disabled:pointer-events-none"
+                        className="w-full px-8 py-4 text-base shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl sm:w-auto disabled:pointer-events-none disabled:opacity-50"
                         onClick={handleDownloadPost}
                         disabled={!readyToDownload || exporting}
                     >

@@ -2,32 +2,12 @@
 
 import { useState, useCallback } from "react";
 
-import type { CarouselSlide, Narrative, OverlaySessionState, CarouselSlideEditState } from "@/types";
+import type { CarouselSlide, Narrative } from "@/types";
 import { BackendUnavailableError } from "@/lib/api/client";
 import { useNarrativeStore } from "@/utils/stores/dashboard/narrative";
 import { generateNarratives } from "@/utils/api/openai/generate-narratives";
 import { generateCarouselMasterPrompt } from "@/utils/api/openai/generate-carousel-master-prompt";
 import { generateCarouselImages } from "@/utils/api/openai/generate-carousel-images";
-import { createTextOverlay, defaultFontSizeForViewport } from "@/components/post/overlay-editor";
-
-/** Build the initial overlay session from generated slides so each slide starts with one text overlay. */
-function buildInitialOverlaySession(slides: CarouselSlide[]): OverlaySessionState {
-    const sessionSlides: Record<number, CarouselSlideEditState> = {};
-    for (const s of slides) {
-        const initial = s.text
-            ? createTextOverlay(s.text, 0, { fontSize: defaultFontSizeForViewport() })
-            : null;
-        sessionSlides[s.index] = {
-            slideIndex: s.index,
-            baseImageUrl: s.image_url ?? null,
-            overlays: initial ? [initial] : [],
-            selectedOverlayId: null,
-            imageStatus: s.status === "success" ? "success" : s.status === "failed" ? "failed" : "pending",
-            imageErrorMessage: s.error_message ?? null,
-        };
-    }
-    return { slides: sessionSlides, activeSlideIndex: slides[0]?.index ?? 1 };
-}
 
 function toCarouselSlide(
     item: { role: string; text: string; imagePrompt: string },
@@ -83,7 +63,7 @@ export function useGenerateCarousel() {
     const [generating, setGenerating] = useState(false);
     const [retrying, setRetrying] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { setPostPreview, initOverlaySession } = useNarrativeStore();
+    const { setPostPreview } = useNarrativeStore();
 
     const generateCarousel = useCallback(
         async (narrative: Narrative): Promise<boolean> => {
@@ -144,7 +124,6 @@ export function useGenerateCarousel() {
                     last_generation_at: new Date().toISOString(),
                     style,
                 });
-                initOverlaySession(buildInitialOverlaySession(slides));
                 return true;
             } catch (err) {
                 console.error("Error generating carousel:", err);
@@ -160,7 +139,7 @@ export function useGenerateCarousel() {
                 setGenerating(false);
             }
         },
-        [setPostPreview, initOverlaySession],
+        [setPostPreview],
     );
 
     const retryFailedSlides = useCallback(async () => {
@@ -203,22 +182,6 @@ export function useGenerateCarousel() {
                 last_generation_at: postPreview.last_generation_at,
                 style,
             });
-            // Refresh image URLs in overlay session without losing user edits
-            const session = useNarrativeStore.getState().postPreview?.overlaySession;
-            if (session) {
-                const patchedSlides = { ...session.slides };
-                for (const s of updatedSlides) {
-                    if (patchedSlides[s.index]) {
-                        patchedSlides[s.index] = {
-                            ...patchedSlides[s.index],
-                            baseImageUrl: s.image_url ?? null,
-                            imageStatus: s.status === "success" ? "success" : s.status === "failed" ? "failed" : "pending",
-                            imageErrorMessage: s.error_message ?? null,
-                        };
-                    }
-                }
-                initOverlaySession({ ...session, slides: patchedSlides });
-            }
         } catch (err) {
             console.error("Error retrying slides:", err);
             setError(
@@ -231,7 +194,7 @@ export function useGenerateCarousel() {
         } finally {
             setRetrying(false);
         }
-    }, [setPostPreview, initOverlaySession]);
+    }, [setPostPreview]);
 
     return {
         generateCarousel,
